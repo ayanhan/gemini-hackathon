@@ -363,7 +363,7 @@ function App() {
     storedState.councilResult ? 'verdict' : hasProfile ? 'input' : 'profile'
   )
   const [category, setCategory] = useState<PresetCategory>(initialCategory)
-  const [debateViewMode, setDebateViewMode] = useState<'threaded' | 'roundtable'>('threaded')
+  const [debateViewMode, setDebateViewMode] = useState<'threaded' | 'roundtable'>('roundtable')
   const questionCount = userContext.length
   const isReviewStep = currentStep >= questionCount
 
@@ -1184,18 +1184,18 @@ function App() {
 
           <div className="deliberation-mode-toggle">
             <button 
-              className={`mode-btn ${debateViewMode === 'threaded' ? 'active' : ''}`}
-              onClick={() => setDebateViewMode('threaded')}
-              type="button"
-            >
-              Threaded Debate
-            </button>
-            <button 
               className={`mode-btn ${debateViewMode === 'roundtable' ? 'active' : ''}`}
               onClick={() => setDebateViewMode('roundtable')}
               type="button"
             >
               Round Table
+            </button>
+            <button 
+              className={`mode-btn ${debateViewMode === 'threaded' ? 'active' : ''}`}
+              onClick={() => setDebateViewMode('threaded')}
+              type="button"
+            >
+              Threaded Debate
             </button>
           </div>
 
