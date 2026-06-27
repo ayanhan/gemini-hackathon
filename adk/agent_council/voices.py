@@ -14,6 +14,33 @@ from google import genai
 from google.genai import types
 
 MODEL = os.environ.get("AGENT_COUNCIL_MODEL", "gemini-3.5-flash")
+TTS_MODEL = os.environ.get("AGENT_COUNCIL_TTS_MODEL", "gemini-3.1-flash-tts-preview")
+TTS_TIMEOUT_S = float(os.environ.get("AGENT_COUNCIL_TTS_TIMEOUT_S", "20"))
+
+VOICE_PROFILES_BY_NAME = {
+    "mentor": ("Kore", "calm, grounded, warm mentor"),
+    "sarcastic buddy": ("Puck", "fast, dry, sarcastic friend"),
+    "buddy": ("Puck", "fast, dry, sarcastic friend"),
+    "18-year-old you": ("Zephyr", "young, bright, impatient, energetic"),
+    "failed future you": ("Charon", "low, regretful, cautionary future self"),
+    "millionaire you": ("Orus", "confident, crisp, boardroom executive"),
+    "scared parents": ("Leda", "worried, protective, emotionally tense parent"),
+    "parents": ("Leda", "worried, protective, emotionally tense parent"),
+    "council chair": ("Kore", "neutral, decisive, clear moderator"),
+}
+VOICE_PROFILES_BY_TONE = {
+    "calm": ("Kore", "calm and reassuring"),
+    "warm": ("Kore", "warm and steady"),
+    "funny": ("Puck", "playful and quick"),
+    "sharp": ("Puck", "sharp and direct"),
+    "sarcastic": ("Puck", "dry and sarcastic"),
+    "worried": ("Leda", "worried and protective"),
+    "scared": ("Leda", "anxious and protective"),
+    "confident": ("Orus", "confident and polished"),
+    "aggressive": ("Fenrir", "intense and forceful"),
+    "angry": ("Fenrir", "angry but controlled"),
+    "creative": ("Aoede", "expressive and imaginative"),
+}
 
 _client: genai.Client | None = None
 
@@ -39,6 +66,31 @@ def get_client() -> genai.Client:
         else:
             _client = genai.Client()
     return _client
+
+
+def tts_enabled() -> bool:
+    return os.environ.get("AGENT_COUNCIL_TTS_ENABLED", "true").lower() in {
+        "true",
+        "1",
+        "yes",
+    }
+
+
+def voice_profile_for(speaker: str, tone: str = "") -> tuple[str, str]:
+    speaker_key = speaker.lower().strip()
+    if speaker_key in VOICE_PROFILES_BY_NAME:
+        return VOICE_PROFILES_BY_NAME[speaker_key]
+
+    tone_key = tone.lower()
+    for marker, profile in VOICE_PROFILES_BY_TONE.items():
+        if marker in tone_key:
+            return profile
+
+    return "Kore", "natural conversational tone"
+
+
+def voice_for(speaker: str, tone: str = "") -> str:
+    return voice_profile_for(speaker, tone)[0]
 
 
 def _clean_line(text: str) -> str:
@@ -88,3 +140,24 @@ async def moderate(prompt: str) -> dict:
         ),
     )
     return _extract_json(response.text or "")
+
+
+async def synthesize_speech(
+    text: str, voice: str, delivery_style: str = "natural conversational tone"
+) -> tuple[str, str]:
+    """Return base64 WAV audio + MIME type for a spoken beat."""
+    if not text.strip() or not tts_enabled():
+        return "", ""
+
+    interaction = await get_client().aio.interactions.create(
+        model=TTS_MODEL,
+        input=f"Say in a {delivery_style}: {text.strip()}",
+        response_format={"type": "audio"},
+        generation_config={"speech_config": [{"voice": voice}]},
+        timeout=TTS_TIMEOUT_S,
+    )
+    audio = getattr(interaction, "output_audio", None)
+    data = getattr(audio, "data", "") if audio else ""
+    mime_type = getattr(audio, "mime_type", "") if audio else ""
+
+    return data or "", mime_type or "audio/wav"

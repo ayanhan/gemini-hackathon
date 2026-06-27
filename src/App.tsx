@@ -134,6 +134,16 @@ const mergeStoredContext = (
       : defaultAnswer
   })
 
+const stripCouncilAudio = (result: CouncilResult): CouncilResult => ({
+  ...result,
+  beats: result.beats.map((beat) => ({
+    label: beat.label,
+    speaker: beat.speaker,
+    text: beat.text,
+    voice: beat.voice,
+  })),
+})
+
 const councilPresets: CouncilPreset[] = [
   {
     label: 'Startup decision',
@@ -263,6 +273,7 @@ function App() {
   const [transcribingIndex, setTranscribingIndex] = useState<number | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
+  const councilAudioRef = useRef<HTMLAudioElement | null>(null)
 
   const [screen, setScreen] = useState<'input' | 'assembly' | 'deliberating' | 'verdict'>(
     storedState.councilResult ? 'verdict' : 'input'
@@ -377,7 +388,7 @@ function App() {
 
   useEffect(() => {
     const nextStoredState: StoredCouncilState = {
-      councilResult,
+      councilResult: stripCouncilAudio(councilResult),
       customAgents,
       question,
       selectedAgentIds,
@@ -470,6 +481,26 @@ function App() {
       window.clearTimeout(finalTimer)
     }
   }, [councilResult, isGenerating, sessionStarted, screen])
+
+  useEffect(() => {
+    if (screen !== 'deliberating' || visibleBeatCount === 0) {
+      councilAudioRef.current?.pause()
+      return
+    }
+
+    const beat = councilResult.beats[visibleBeatCount - 1]
+
+    if (!beat?.audioBase64) {
+      return
+    }
+
+    const audio = councilAudioRef.current ?? new Audio()
+    councilAudioRef.current = audio
+    audio.pause()
+    audio.currentTime = 0
+    audio.src = `data:${beat.audioMimeType ?? 'audio/wav'};base64,${beat.audioBase64}`
+    void audio.play().catch(() => undefined)
+  }, [councilResult, screen, visibleBeatCount])
 
   const startCouncil = async () => {
     const trimmedQuestion = question.trim()
