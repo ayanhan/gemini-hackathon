@@ -19,9 +19,25 @@ _client: genai.Client | None = None
 
 
 def get_client() -> genai.Client:
+    """Return a cached genai client.
+
+    On Vertex (local ADC or Agent Engine) we pin the model endpoint to a fixed
+    location (default ``global``) so calls work even when the deployment region
+    differs from where the model is served.
+    """
     global _client
     if _client is None:
-        _client = genai.Client()
+        project = os.environ.get("GOOGLE_CLOUD_PROJECT")
+        use_vertex = os.environ.get("GOOGLE_GENAI_USE_VERTEXAI", "").lower() in {
+            "true",
+            "1",
+            "yes",
+        }
+        if project and use_vertex:
+            location = os.environ.get("AGENT_COUNCIL_VERTEX_LOCATION", "global")
+            _client = genai.Client(vertexai=True, project=project, location=location)
+        else:
+            _client = genai.Client()
     return _client
 
 
