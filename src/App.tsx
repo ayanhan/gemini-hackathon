@@ -16,6 +16,12 @@ import {
   transcribeAudio,
 } from './councilService'
 import './App.css'
+import mentorImg from './assets/personas/mentor.jpg'
+import buddyImg from './assets/personas/buddy.jpg'
+import eighteenImg from './assets/personas/eighteen.jpg'
+import failedImg from './assets/personas/failed.jpg'
+import millionaireImg from './assets/personas/millionaire.jpg'
+import parentsImg from './assets/personas/parents.jpg'
 
 const councilAgents: CouncilAgent[] = [
   {
@@ -232,14 +238,22 @@ const councilPresets: CouncilPreset[] = [
   },
 ]
 
-const agentMeta: Record<string, { bg: string, letter: string }> = {
-  mentor: { bg: '#1F9C8B', letter: 'M' },
-  buddy: { bg: '#C8881C', letter: 'S' },
-  eighteen: { bg: '#E0603C', letter: '18' },
-  failed: { bg: '#5B61C9', letter: 'F' },
-  millionaire: { bg: '#3E9B57', letter: '$' },
-  parents: { bg: '#CE5680', letter: 'P' },
+type AgentMeta = { bg: string, letter: string, image?: string }
+
+const agentMeta: Record<string, AgentMeta> = {
+  mentor: { bg: '#1F9C8B', letter: 'M', image: mentorImg },
+  buddy: { bg: '#C8881C', letter: 'S', image: buddyImg },
+  eighteen: { bg: '#E0603C', letter: '18', image: eighteenImg },
+  failed: { bg: '#5B61C9', letter: 'F', image: failedImg },
+  millionaire: { bg: '#3E9B57', letter: '$', image: millionaireImg },
+  parents: { bg: '#CE5680', letter: 'P', image: parentsImg },
 }
+
+// Render a persona portrait when we have one, else the colored letter (custom seats).
+const renderAvatar = (meta: AgentMeta, name?: string) =>
+  meta.image
+    ? <img className="avatar-img" src={meta.image} alt={name ?? ''} />
+    : meta.letter
 
 function App() {
   const [question, setQuestion] = useState(
@@ -712,12 +726,12 @@ function App() {
                 </div>
                 <span className="center-call-label">YOUR CALL</span>
               </div>
-              <div className="orbit-agent bubble-m">M</div>
-              <div className="orbit-agent bubble-s">S</div>
-              <div className="orbit-agent bubble-18">18</div>
-              <div className="orbit-agent bubble-f">F</div>
-              <div className="orbit-agent bubble-mil">$</div>
-              <div className="orbit-agent bubble-p">P</div>
+              <div className="orbit-agent bubble-m"><img className="avatar-img" src={mentorImg} alt="Mentor" /></div>
+              <div className="orbit-agent bubble-s"><img className="avatar-img" src={buddyImg} alt="Sarcastic buddy" /></div>
+              <div className="orbit-agent bubble-18"><img className="avatar-img" src={eighteenImg} alt="18-year-old you" /></div>
+              <div className="orbit-agent bubble-f"><img className="avatar-img" src={failedImg} alt="Failed future you" /></div>
+              <div className="orbit-agent bubble-mil"><img className="avatar-img" src={millionaireImg} alt="Millionaire you" /></div>
+              <div className="orbit-agent bubble-p"><img className="avatar-img" src={parentsImg} alt="Scared parents" /></div>
             </div>
             <div className="orbit-labels-panel">
               <span className="labels-heading">Your council · {selectedAgentIds.length} voices</span>
@@ -767,7 +781,7 @@ function App() {
                     type="button"
                   >
                     <div className="agent-select-avatar" style={{ backgroundColor: meta.bg }}>
-                      {meta.letter}
+                      {renderAvatar(meta, agent.name)}
                     </div>
                     <div className="agent-select-info">
                       <span className="agent-name">{agent.name}</span>
@@ -1015,7 +1029,7 @@ function App() {
                     return (
                       <div key={agent.id} className={`voice-status-item ${isSpeaking ? 'speaking' : ''}`}>
                         <div className="voice-status-avatar" style={{ backgroundColor: meta.bg }}>
-                          {meta.letter}
+                          {renderAvatar(meta, agent.name)}
                         </div>
                         <div className="voice-status-info">
                           <span className="voice-name">{agent.name}</span>
@@ -1061,7 +1075,7 @@ function App() {
                   return (
                     <div key={index} className="debate-bubble-wrap message-pop">
                       <div className="debate-bubble-avatar" style={{ backgroundColor: meta.bg }}>
-                        {meta.letter}
+                        {renderAvatar(meta, beat.speaker)}
                       </div>
                       <div className="debate-bubble-body" style={{ borderLeftColor: meta.bg }}>
                         <div className="bubble-body-header">
@@ -1162,31 +1176,38 @@ function App() {
                         backgroundColor: meta.bg
                       }}
                     >
-                      {meta.letter}
+                      {renderAvatar(meta, agent.name)}
                     </div>
                   )
                 })}
               </div>
 
-              {visibleBeatCount > 0 && (
-                <div className="roundtable-floating-quote message-pop">
-                  <div className="floating-quote-header">
-                    <div className="floating-quote-avatar" style={{ 
-                      backgroundColor: (allAgents.find(a => a.name.toLowerCase() === councilResult.beats[visibleBeatCount - 1].speaker.toLowerCase() || a.name.toLowerCase().includes(councilResult.beats[visibleBeatCount - 1].speaker.toLowerCase()))?.id ? agentMeta[allAgents.find(a => a.name.toLowerCase() === councilResult.beats[visibleBeatCount - 1].speaker.toLowerCase() || a.name.toLowerCase().includes(councilResult.beats[visibleBeatCount - 1].speaker.toLowerCase()))!.id]?.bg : 'var(--purple)')
-                    }}>
-                      {councilResult.beats[visibleBeatCount - 1].speaker[0]}
-                    </div>
-                    <div className="floating-quote-info">
-                      <div className="floating-speaker-name">
-                        <span>{councilResult.beats[visibleBeatCount - 1].speaker}</span>
-                        <span className="speaking-badge-pill">SPEAKING</span>
+              {visibleBeatCount > 0 && (() => {
+                const activeBeat = councilResult.beats[visibleBeatCount - 1]
+                const speakerAgent = allAgents.find(
+                  (a) => a.name.toLowerCase() === activeBeat.speaker.toLowerCase() ||
+                         a.name.toLowerCase().includes(activeBeat.speaker.toLowerCase())
+                )
+                const meta = (speakerAgent && agentMeta[speakerAgent.id]) ||
+                  { bg: 'var(--purple)', letter: activeBeat.speaker[0] }
+                return (
+                  <div className="roundtable-floating-quote message-pop">
+                    <div className="floating-quote-header">
+                      <div className="floating-quote-avatar" style={{ backgroundColor: meta.bg }}>
+                        {renderAvatar(meta, activeBeat.speaker)}
                       </div>
-                      <span className="floating-beat-label">{councilResult.beats[visibleBeatCount - 1].label}</span>
+                      <div className="floating-quote-info">
+                        <div className="floating-speaker-name">
+                          <span>{activeBeat.speaker}</span>
+                          <span className="speaking-badge-pill">SPEAKING</span>
+                        </div>
+                        <span className="floating-beat-label">{activeBeat.label}</span>
+                      </div>
                     </div>
+                    <p className="floating-quote-text">"{activeBeat.text}"</p>
                   </div>
-                  <p className="floating-quote-text">"{councilResult.beats[visibleBeatCount - 1].text}"</p>
-                </div>
-              )}
+                )
+              })()}
             </div>
           )}
         </section>
@@ -1306,14 +1327,14 @@ function App() {
                       (a) => a.name.toLowerCase() === align.agent.toLowerCase() ||
                              a.name.toLowerCase().includes(align.agent.toLowerCase())
                     )
-                    const meta = agentDetails ? agentMeta[agentDetails.id] : { bg: '#7A5AF0', letter: align.agent[0] }
+                    const meta = (agentDetails && agentMeta[agentDetails.id]) || { bg: '#7A5AF0', letter: align.agent[0] }
                     const voteLabel = align.agreement >= 75 ? 'GO' : align.agreement >= 45 ? 'COND.' : 'HOLD'
                     const voteClass = align.agreement >= 75 ? 'go' : align.agreement >= 45 ? 'cond' : 'hold'
-                    
+
                     return (
                       <div key={align.agent} className="agent-quote-card">
                         <div className="quote-card-avatar" style={{ backgroundColor: meta.bg }}>
-                          {meta.letter}
+                          {renderAvatar(meta, align.agent)}
                         </div>
                         <div className="quote-card-main">
                           <div className="quote-card-header">
@@ -1331,7 +1352,7 @@ function App() {
                     return (
                       <div key={agent.id} className="agent-quote-card">
                         <div className="quote-card-avatar" style={{ backgroundColor: meta.bg }}>
-                          {meta.letter}
+                          {renderAvatar(meta, agent.name)}
                         </div>
                         <div className="quote-card-main">
                           <div className="quote-card-header">

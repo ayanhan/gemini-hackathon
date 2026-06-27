@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react'
 import './Landing.css'
+import mentorImg from './assets/personas/mentor.jpg'
+import buddyImg from './assets/personas/buddy.jpg'
+import eighteenImg from './assets/personas/eighteen.jpg'
+import failedImg from './assets/personas/failed.jpg'
+import millionaireImg from './assets/personas/millionaire.jpg'
+import parentsImg from './assets/personas/parents.jpg'
 
 const accentPhrases = [
   'every version of you.',
@@ -11,12 +17,12 @@ const accentPhrases = [
 ]
 
 const seats = [
-  { letter: 'M', color: 'var(--mentor)' },
-  { letter: 'S', color: 'var(--buddy)' },
-  { letter: '18', color: 'var(--eighteen)' },
-  { letter: 'F', color: 'var(--failed)' },
-  { letter: '$', color: 'var(--millionaire)' },
-  { letter: 'P', color: 'var(--parents)' },
+  { name: 'Mentor', image: mentorImg },
+  { name: 'Sarcastic buddy', image: buddyImg },
+  { name: '18-year-old you', image: eighteenImg },
+  { name: 'Failed future you', image: failedImg },
+  { name: 'Millionaire you', image: millionaireImg },
+  { name: 'Scared parents', image: parentsImg },
 ]
 
 function Landing({ onEnter }: { onEnter: () => void }) {
@@ -59,14 +65,10 @@ function Landing({ onEnter }: { onEnter: () => void }) {
           Convene your council <span className="landing-cta-arrow">→</span>
         </button>
 
-        <div className="landing-seats" aria-hidden="true">
+        <div className="landing-seats">
           {seats.map((seat) => (
-            <span
-              key={seat.letter}
-              className="landing-seat"
-              style={{ backgroundColor: seat.color }}
-            >
-              {seat.letter}
+            <span key={seat.name} className="landing-seat">
+              <img className="landing-seat-img" src={seat.image} alt={seat.name} />
             </span>
           ))}
         </div>
