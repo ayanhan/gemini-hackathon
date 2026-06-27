@@ -1,5 +1,7 @@
 import base64
+import io
 import os
+import wave
 
 import uvicorn
 from fastapi import FastAPI
@@ -49,6 +51,25 @@ class TranscribeRequest(BaseModel):
     question: str = ""
 
 
+def is_silent_wav(audio_bytes: bytes) -> bool:
+    try:
+        with wave.open(io.BytesIO(audio_bytes), "rb") as wav:
+            sample_width = wav.getsampwidth()
+            frames = wav.readframes(wav.getnframes())
+    except wave.Error:
+        return False
+
+    if sample_width != 2 or not frames:
+        return False
+
+    samples = (
+        int.from_bytes(frames[index:index + 2], "little", signed=True)
+        for index in range(0, len(frames) - 1, 2)
+    )
+
+    return max(abs(sample) for sample in samples) < 120
+
+
 def clean_transcription(text: str, question: str = "") -> str:
     cleaned = text.strip().strip('"').strip("'").strip()
     cleaned_question = question.strip().strip('"').strip("'").strip()
@@ -82,6 +103,9 @@ def clean_transcription(text: str, question: str = "") -> str:
 async def transcribe(req: TranscribeRequest) -> dict[str, str]:
     """Transcribe a short spoken answer server-side (no client API key needed)."""
     audio_bytes = base64.b64decode(req.audioBase64)
+    if req.mimeType.lower().startswith("audio/wav") and is_silent_wav(audio_bytes):
+        return {"text": ""}
+
     instruction = (
         "You are an accurate speech-to-text transcriber. "
         f'The user is answering: "{req.question}". '
