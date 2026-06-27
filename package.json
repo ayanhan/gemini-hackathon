@@ -7,7 +7,7 @@
     "adk:install": "python3 -m pip install -r adk/requirements.txt",
     "adk:server": "adk api_server --auto_create_session adk",
     "adk:serve": "cd adk && uvicorn main:app --host 0.0.0.0 --port 8000",
-    "gcp:deploy:adk": "gcloud run deploy agent-council-adk --source adk --region ${GOOGLE_CLOUD_LOCATION:-us-central1} --allow-unauthenticated --set-env-vars GOOGLE_GENAI_USE_VERTEXAI=True,GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT},GOOGLE_CLOUD_LOCATION=${GOOGLE_CLOUD_LOCATION:-us-central1}",
+    "gcp:deploy:adk": "gcloud run deploy agent-council-adk --source adk --region ${GOOGLE_CLOUD_LOCATION:-us-central1} --allow-unauthenticated --set-env-vars GOOGLE_GENAI_USE_VERTEXAI=True,GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT},GOOGLE_CLOUD_LOCATION=${GOOGLE_CLOUD_LOCATION:-us-central1},AGENT_COUNCIL_MODEL=${AGENT_COUNCIL_MODEL:-gemini-3.5-flash}",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
