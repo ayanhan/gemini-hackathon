@@ -158,7 +158,7 @@ async def moderate(prompt: str) -> dict:
         config=types.GenerateContentConfig(
             temperature=0.6,
             response_mime_type="application/json",
-            max_output_tokens=512,
+            max_output_tokens=1536,
             thinking_config=types.ThinkingConfig(thinking_budget=0),
         ),
     )

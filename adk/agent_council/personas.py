@@ -61,7 +61,10 @@ Name who you are answering. Do not repeat your opening.
 {_SHARED_RULES}"""
 
 
-def moderator_prompt(request: CouncilRequest, transcript: str) -> str:
+def moderator_prompt(
+    request: CouncilRequest, transcript: str, speakers: list[str]
+) -> str:
+    roster = ", ".join(speakers) if speakers else "the council"
     return f"""You are the Council Chair for Venn. You are neutral but decisive.
 
 The decision on the table:
@@ -76,10 +79,16 @@ Full debate transcript:
 Weigh the voices and deliver the council's unified ruling. Take a real position;
 no fence-sitting. Ground it in the user's actual situation.
 
+Then rate, for EACH of these voices ({roster}), how much they agree with the
+final decision on a 0-100 scale, and summarise their single biggest concern.
+
 Return STRICT JSON only, no markdown, no extra keys, this exact shape:
 {{
   "chairLine": "one spoken verdict line for the chair to say, max {MAX_LINE_WORDS} words",
   "decision": "clear unified decision, max 18 words",
   "conditions": "what must be true first, max 28 words",
-  "firstMove": "one concrete action within 24 hours, max 24 words"
+  "firstMove": "one concrete action within 24 hours, max 24 words",
+  "alignment": [
+    {{"agent": "exact voice name", "agreement": 0-100, "keyConcerns": "their main concern, max 12 words"}}
+  ]
 }}"""

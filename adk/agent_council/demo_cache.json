@@ -3,52 +3,74 @@
     {
       "label": "Opening",
       "speaker": "Mentor",
-      "text": "At thirty-four, with nine months of runway and family planning on the horizon, we don't jump until we have designed the first test."
+      "text": "At thirty-four, with family planning ahead, nine months of runway is a sprint, not a launchpad. What is our first revenue-generating experiment?"
     },
     {
       "label": "Opening",
       "speaker": "Sarcastic buddy",
-      "text": "You think it feels easy because your nine-month runway hasn't met a real customer or a baby diaper yet, so show me buyers."
+      "text": "You think business feels easy because your side projects didn't have to buy baby formula; show me customers before you burn that runway."
     },
     {
       "label": "Opening",
       "speaker": "18-year-old you",
-      "text": "You are thirty-four, sitting on nine months of runway, bored by easy, and you said you did not want a safe life. Let’s jump."
+      "text": "You're thirty-four, comfortable, and dying on the vine; jump now or admit you chose a safe life over your own freedom."
     },
     {
       "label": "Opening",
       "speaker": "Scared parents",
-      "text": "Nine months of savings disappears fast, and you are starting a family at thirty-four; please do not jump without a net."
+      "text": "You are thirty-four, planning a baby, and thinking a nine-month runway is enough to jump without a parachute? That is not freedom, it is terrifying."
     },
     {
       "label": "Rebuttal",
       "speaker": "Mentor",
-      "text": "To eighteen-year-old me: Boredom isn't a strategy, and jumping blind risks the family we want. We build the net before we leap."
+      "text": "Eighteen-year-old self, jumping blind isn't freedom—it's a trap. We will build this, but on a bridge, not a cliff."
     },
     {
       "label": "Rebuttal",
       "speaker": "Sarcastic buddy",
-      "text": "Eighteen-year-old me, you couldn't even afford a real beer, so stop pretending nine months of savings pays for diapers and server costs."
+      "text": "To the 18-year-old: Freedom is great, kid, but teenage angst doesn't pay for diapers. Show me paying customers, or keep your day job."
     },
     {
       "label": "Rebuttal",
       "speaker": "18-year-old you",
-      "text": "Parents, \"safe\" is how he ended up thirty-four and bored; nine months is an eternity to build freedom before the baby arrives."
+      "text": "Parents, you call nine months terrifying, but thirty more years of trading my freedom for a cubicle is what actually kills me."
     },
     {
       "label": "Rebuttal",
       "speaker": "Scared parents",
-      "text": "Eighteen-year-old self, you don't have to pay for a baby's health insurance or mortgage, so stop telling us to jump into ruin."
+      "text": "Eighteen-year-old self, you don't have to pay for diapers; trading nine months of safety for \"freedom\" when a baby is coming is reckless."
     },
     {
       "label": "Verdict",
       "speaker": "Council chair",
-      "text": "You have the hunger and the runway, but jumping without a validated market risks the very family stability you are planning to build."
+      "text": "You have the fire and the runway, but jumping blind with a family on the horizon is a trap, not freedom."
     }
   ],
   "verdict": {
-    "decision": "Do not quit yet; transition by securing your first paying customer while keeping your day job.",
-    "conditions": "You must secure one recurring client or three pre-sales to prove market demand before resigning.",
-    "firstMove": "Draft a landing page for your side project with a pre-order button and share it with ten potential customers."
-  }
+    "decision": "Transition to your own business, but only after securing your first paying customer while employed.",
+    "conditions": "You must validate your product with one paying client and establish a strict family-approved emergency fund.",
+    "firstMove": "Draft a pitch for your side project and send it to three potential warm leads today."
+  },
+  "alignment": [
+    {
+      "agent": "Mentor",
+      "agreement": 90,
+      "keyConcerns": "Launching without a validated, revenue-generating business model first."
+    },
+    {
+      "agent": "Sarcastic buddy",
+      "agreement": 85,
+      "keyConcerns": "Confusing side-project hobbies with actual, diaper-paying market demand."
+    },
+    {
+      "agent": "18-year-old you",
+      "agreement": 60,
+      "keyConcerns": "Delaying the leap and letting comfort kill the dream entirely."
+    },
+    {
+      "agent": "Scared parents",
+      "agreement": 50,
+      "keyConcerns": "Draining nine months of savings with a new baby arriving."
+    }
+  ]
 }

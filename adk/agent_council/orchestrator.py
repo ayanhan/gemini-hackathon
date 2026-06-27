@@ -22,6 +22,7 @@ from google.genai import types
 
 from . import cache, personas, voices
 from .schema import (
+    Alignment,
     Beat,
     CouncilRequest,
     CouncilResult,
@@ -186,14 +187,16 @@ class CouncilOrchestrator(BaseAgent):
 
         full_transcript = _transcript(opening_beats + clash_beats)
 
-        # Wave 3: moderator verdict.
-        verdict, chair_line = await self._verdict(request, full_transcript)
+        # Wave 3: moderator verdict + per-voice alignment.
+        verdict, chair_line, alignment = await self._verdict(
+            request, full_transcript, names
+        )
         verdict_beat = Beat(
             label=LABEL_VERDICT, speaker="Council chair", text=chair_line
         )
 
         beats = opening_beats + clash_beats + [verdict_beat]
-        return CouncilResult(beats=beats, verdict=verdict)
+        return CouncilResult(beats=beats, verdict=verdict, alignment=alignment)
 
     async def add_audio(
         self, result: CouncilResult, request: CouncilRequest
@@ -220,11 +223,13 @@ class CouncilOrchestrator(BaseAgent):
         return result
 
     async def _verdict(
-        self, request: CouncilRequest, transcript: str
-    ) -> tuple[Verdict, str]:
+        self, request: CouncilRequest, transcript: str, names: list[str]
+    ) -> tuple[Verdict, str, list[Alignment]]:
         try:
             ruling = await asyncio.wait_for(
-                voices.moderate(personas.moderator_prompt(request, transcript)),
+                voices.moderate(
+                    personas.moderator_prompt(request, transcript, names)
+                ),
                 timeout=MODERATOR_TIMEOUT_S,
             )
         except Exception:
@@ -241,4 +246,37 @@ class CouncilOrchestrator(BaseAgent):
             firstMove=str(ruling.get("firstMove", "")).strip()
             or "Write down the single fact that would most change this decision.",
         )
-        return verdict, chair_line
+        alignment = self._parse_alignment(ruling.get("alignment"), names)
+        return verdict, chair_line, alignment
+
+    @staticmethod
+    def _parse_alignment(raw: object, names: list[str]) -> list[Alignment]:
+        by_name: dict[str, Alignment] = {}
+        if isinstance(raw, list):
+            for item in raw:
+                if not isinstance(item, dict):
+                    continue
+                agent = str(item.get("agent", "")).strip()
+                if not agent:
+                    continue
+                try:
+                    agreement = int(float(item.get("agreement", 50)))
+                except (TypeError, ValueError):
+                    agreement = 50
+                agreement = max(0, min(100, agreement))
+                by_name[agent.lower()] = Alignment(
+                    agent=agent,
+                    agreement=agreement,
+                    keyConcerns=str(item.get("keyConcerns", "")).strip(),
+                )
+
+        # Ensure every council voice has an entry, in roster order.
+        result: list[Alignment] = []
+        for name in names:
+            match = by_name.get(name.lower())
+            result.append(
+                match
+                if match is not None
+                else Alignment(agent=name, agreement=50, keyConcerns="")
+            )
+        return result
