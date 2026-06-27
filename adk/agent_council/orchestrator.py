@@ -270,10 +270,22 @@ class CouncilOrchestrator(BaseAgent):
                     keyConcerns=str(item.get("keyConcerns", "")).strip(),
                 )
 
-        # Ensure every council voice has an entry, in roster order.
+        # Ensure every council voice has an entry, in roster order. Match exactly
+        # first, then fall back to fuzzy matching (the model sometimes shortens
+        # names, e.g. "Buddy" for "Sarcastic buddy").
         result: list[Alignment] = []
         for name in names:
-            match = by_name.get(name.lower())
+            key = name.lower()
+            match = by_name.get(key)
+            if match is None:
+                for other_key, other in by_name.items():
+                    if other_key in key or key in other_key:
+                        match = Alignment(
+                            agent=name,
+                            agreement=other.agreement,
+                            keyConcerns=other.keyConcerns,
+                        )
+                        break
             result.append(
                 match
                 if match is not None

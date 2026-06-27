@@ -1,12 +1,20 @@
 """Prompt builders for each council voice and the moderator.
 
-Kept separate from the orchestration logic so the personalities can be tuned
-independently. Every voice speaks in short, vivid, spoken lines so the debate
-reads fast on stage and so per-line TTS stays snappy.
+Built-in voices use the rich persona library in ``counselors/`` as the single
+source of truth, overlaid with a De Bono thinking hat per round (White facts for
+openings, Black critique for the clash). Wildcard voices fall back to the fields
+supplied in the request. Every voice speaks in short, vivid, spoken lines so the
+debate reads fast on stage and per-line TTS stays snappy.
 """
 
 from __future__ import annotations
 
+from .counselors.counselor import (
+    Hat,
+    get_hat,
+    get_persona,
+    persona_for_name,
+)
 from .schema import CouncilRequest, Persona, context_block
 
 MAX_LINE_WORDS = 24
@@ -22,6 +30,7 @@ Hard rules:
 
 
 def _persona_card(persona: Persona) -> str:
+    """Voice description for a wildcard (no library entry)."""
     return (
         f"You are \"{persona.safe_name}\", a member of the user's decision council.\n"
         f"Seat: {persona.seat}\n"
@@ -31,23 +40,40 @@ def _persona_card(persona: Persona) -> str:
     )
 
 
-def opening_prompt(persona: Persona, request: CouncilRequest) -> str:
-    return f"""{_persona_card(persona)}
+def _voice_card(persona: Persona) -> str:
+    """Rich library persona if it is a built-in voice, else the wildcard card."""
+    builtin = persona_for_name(persona.safe_name)
+    if builtin is not None:
+        return get_persona(builtin)
+    return _persona_card(persona)
 
-The decision on the table:
+
+def _compose(persona: Persona, hat: Hat, body: str) -> str:
+    return f"""{_voice_card(persona)}
+
+---
+
+{get_hat(hat)}
+
+---
+
+{body}
+{_SHARED_RULES}"""
+
+
+def opening_prompt(persona: Persona, request: CouncilRequest) -> str:
+    body = f"""The decision on the table:
 {request.question}
 
 What you know about the user:
 {context_block(request)}
 
-Give your OPENING take on this decision from your seat. Plant your flag.
-{_SHARED_RULES}"""
+Give your OPENING take on this decision from your seat. Plant your flag."""
+    return _compose(persona, Hat.WHITE, body)
 
 
 def clash_prompt(persona: Persona, request: CouncilRequest, transcript: str) -> str:
-    return f"""{_persona_card(persona)}
-
-The decision on the table:
+    body = f"""The decision on the table:
 {request.question}
 
 What you know about the user:
@@ -57,8 +83,8 @@ The council just opened. Here is what everyone said:
 {transcript}
 
 Now REACT. Push back on a voice you disagree with, or sharpen the strongest point.
-Name who you are answering. Do not repeat your opening.
-{_SHARED_RULES}"""
+Name who you are answering. Do not repeat your opening."""
+    return _compose(persona, Hat.BLACK, body)
 
 
 def moderator_prompt(
