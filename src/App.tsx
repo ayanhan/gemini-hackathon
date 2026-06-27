@@ -12,6 +12,7 @@ import councilHero from './assets/council-hero.png'
 import {
   type CouncilAgent,
   type CouncilResult,
+  type UserContextAnswer,
   fallbackCouncilResult,
   runCouncil,
 } from './councilService'
@@ -68,6 +69,19 @@ const councilAgents: CouncilAgent[] = [
   },
 ]
 
+const interviewQuestions = [
+  'What outcome do you want most from this decision?',
+  'What are you afraid will happen if you choose wrong?',
+  'How much money runway do you have?',
+  'Who depends on you or will be affected?',
+  'What deadline or timing pressure exists?',
+  'What have you already tried?',
+  'What evidence would make this a clear yes?',
+  'What evidence would make this a clear no?',
+  'What personal value should the council protect?',
+  'What is one constraint the council must respect?',
+]
+
 function App() {
   const [question, setQuestion] = useState(
     'Should I quit my 9-to-5 and build a startup?',
@@ -79,6 +93,12 @@ function App() {
   const [wildcardName, setWildcardName] = useState('')
   const [wildcardTone, setWildcardTone] = useState('')
   const [wildcardProtects, setWildcardProtects] = useState('')
+  const [userContext, setUserContext] = useState<UserContextAnswer[]>(
+    interviewQuestions.map((interviewQuestion) => ({
+      question: interviewQuestion,
+      answer: '',
+    })),
+  )
   const [sessionStarted, setSessionStarted] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [visibleBeatCount, setVisibleBeatCount] = useState(
@@ -138,6 +158,14 @@ function App() {
     setWildcardProtects('')
   }
 
+  const updateContextAnswer = (index: number, answer: string) => {
+    setUserContext((currentAnswers) =>
+      currentAnswers.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, answer } : item,
+      ),
+    )
+  }
+
   useEffect(() => {
     if (!sessionStarted || isGenerating) {
       return
@@ -168,7 +196,11 @@ function App() {
     setStatusMessage('Council is forming arguments...')
 
     try {
-      const result = await runCouncil(trimmedQuestion, selectedAgents)
+      const result = await runCouncil(
+        trimmedQuestion,
+        selectedAgents,
+        userContext,
+      )
       setCouncilResult(result)
       setStatusMessage(
         result.source === 'adk'
@@ -250,6 +282,35 @@ function App() {
       </section>
 
       <section className="workspace-grid" aria-label="Council workspace">
+        <section className="panel interview-panel">
+          <div className="panel-heading">
+            <div>
+              <p className="eyebrow">Context interview</p>
+              <h2>Answer before the council votes</h2>
+            </div>
+            <span className="agent-count">
+              {userContext.filter((item) => item.answer.trim()).length}/10
+            </span>
+          </div>
+
+          <div className="interview-grid">
+            {userContext.map((item, index) => (
+              <label className="interview-question" key={item.question}>
+                <span>
+                  {index + 1}. {item.question}
+                </span>
+                <input
+                  onChange={(event) =>
+                    updateContextAnswer(index, event.target.value)
+                  }
+                  placeholder="Short answer"
+                  value={item.answer}
+                />
+              </label>
+            ))}
+          </div>
+        </section>
+
         <section className="panel agent-panel">
           <div className="panel-heading">
             <div>

@@ -6,7 +6,8 @@ Agent Council lets a user put one hard decision in front of a small group of
 appointed agents: mentor, sarcastic buddy, younger self, future self, scared
 parents, and other useful voices. The app can generate a live council debate
 with Gemini, then reveals the messages one by one and ends with a unified
-verdict.
+verdict. Before the council runs, the app asks 10 short context questions so
+the agents can debate the real situation instead of giving generic advice.
 
 ## Run locally
 
@@ -138,8 +139,9 @@ The council runtime logic lives in `src/councilService.ts`.
    `adk/agent_council`.
 2. If ADK is not configured, sends the decision directly to Gemini with
    `@google/genai`.
-3. Parses the verdict into Decision, Conditions, and First 24-hour move.
-4. The UI animates the returned messages sequentially.
+3. Includes the user's 10-question context interview and selected council seats.
+4. Parses the verdict into Decision, Conditions, and First 24-hour move.
+5. The UI animates the returned messages sequentially.
 
 ADK endpoint used by the frontend:
 

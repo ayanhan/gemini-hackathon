@@ -27,6 +27,11 @@ export type CouncilResult = {
   source: 'adk' | 'gemini' | 'fallback'
 }
 
+export type UserContextAnswer = {
+  question: string
+  answer: string
+}
+
 const fallbackResult: Omit<CouncilResult, 'source'> = {
   beats: [
     {
@@ -59,7 +64,23 @@ const fallbackResult: Omit<CouncilResult, 'source'> = {
   },
 }
 
-const buildPrompt = (question: string, agents: CouncilAgent[]) => {
+const buildUserContext = (userContext: UserContextAnswer[]) => {
+  const answeredContext = userContext.filter((item) => item.answer.trim())
+
+  if (answeredContext.length === 0) {
+    return 'No extra user context was provided.'
+  }
+
+  return answeredContext
+    .map((item) => `- ${item.question}: ${item.answer.trim()}`)
+    .join('\n')
+}
+
+const buildPrompt = (
+  question: string,
+  agents: CouncilAgent[],
+  userContext: UserContextAnswer[],
+) => {
   const agentBrief = agents
     .map(
       (agent) =>
@@ -71,6 +92,9 @@ const buildPrompt = (question: string, agents: CouncilAgent[]) => {
 
 Decision:
 ${question}
+
+User context:
+${buildUserContext(userContext)}
 
 Selected agents:
 ${agentBrief}
@@ -101,9 +125,19 @@ Rules:
 - The verdict must match the user's actual decision, not generic advice.`
 }
 
-const buildCouncilPayload = (question: string, agents: CouncilAgent[]) =>
+const buildCouncilPayload = (
+  question: string,
+  agents: CouncilAgent[],
+  userContext: UserContextAnswer[],
+) =>
   JSON.stringify({
     question,
+    userContext: userContext
+      .filter((item) => item.answer.trim())
+      .map((item) => ({
+        question: item.question,
+        answer: item.answer.trim(),
+      })),
     agents: agents.map((agent) => ({
       name: agent.name,
       seat: agent.seat,
@@ -175,6 +209,7 @@ const extractTextFromAdkResponse = (value: unknown): string => {
 const runCouncilWithAdk = async (
   question: string,
   agents: CouncilAgent[],
+  userContext: UserContextAnswer[],
   adkApiUrl: string,
 ): Promise<CouncilResult> => {
   const sessionId = `council-${crypto.randomUUID()}`
@@ -187,7 +222,7 @@ const runCouncilWithAdk = async (
         session_id: sessionId,
         new_message: {
           role: 'user',
-          parts: [{ text: buildCouncilPayload(question, agents) }],
+          parts: [{ text: buildCouncilPayload(question, agents, userContext) }],
         },
       }),
       headers: {
@@ -213,12 +248,13 @@ const runCouncilWithAdk = async (
 export const runCouncil = async (
   question: string,
   agents: CouncilAgent[],
+  userContext: UserContextAnswer[],
 ): Promise<CouncilResult> => {
   const adkApiUrl = import.meta.env.VITE_ADK_API_URL
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY
 
   if (adkApiUrl) {
-    return runCouncilWithAdk(question, agents, adkApiUrl)
+    return runCouncilWithAdk(question, agents, userContext, adkApiUrl)
   }
 
   if (!apiKey) {
@@ -228,7 +264,7 @@ export const runCouncil = async (
   const ai = new GoogleGenAI({ apiKey })
   const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash',
-    contents: buildPrompt(question, agents),
+    contents: buildPrompt(question, agents, userContext),
     config: {
       responseMimeType: 'application/json',
       temperature: 0.9,
