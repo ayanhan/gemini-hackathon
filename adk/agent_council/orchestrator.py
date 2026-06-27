@@ -22,6 +22,7 @@ from google.genai import types
 
 from . import cache, personas, voices
 from .schema import (
+    Alignment,
     Beat,
     CouncilRequest,
     CouncilResult,
@@ -155,45 +156,37 @@ class CouncilOrchestrator(BaseAgent):
     async def deliberate(self, request: CouncilRequest) -> CouncilResult:
         council = (request.personas or _DEFAULT_PERSONAS)[:MAX_COUNCIL]
 
-        # Stable, unique display names shared across waves (and later TTS).
+        # Stable, unique display names shared across turns (and later TTS).
         used: dict[str, int] = {}
         names = [_dedupe_name(p.safe_name, used) for p in council]
 
-        # Wave 1: openings, in parallel.
-        opening_lines = await asyncio.gather(
-            *(_safe_speak(p, personas.opening_prompt(p, request)) for p in council)
-        )
-        opening_beats = [
-            Beat(label=LABEL_OPENING, speaker=name, text=line)
-            for name, line in zip(names, opening_lines)
-            if line
-        ]
+        beats: list[Beat] = []
 
-        opening_transcript = _transcript(opening_beats)
-
-        # Wave 2: rebuttals, in parallel, each having read every opening.
-        clash_lines = await asyncio.gather(
-            *(
-                _safe_speak(p, personas.clash_prompt(p, request, opening_transcript))
-                for p in council
+        # Round 1: opening exchange. Sequential so each voice hears the running
+        # conversation and builds on it instead of answering the prompt blind.
+        for persona, name in zip(council, names):
+            line = await _safe_speak(
+                persona, personas.opening_prompt(persona, request, _transcript(beats))
             )
+            if line:
+                beats.append(Beat(label=LABEL_OPENING, speaker=name, text=line))
+
+        # Round 2: deepening clash, still a flowing sequential discussion.
+        for persona, name in zip(council, names):
+            line = await _safe_speak(
+                persona, personas.clash_prompt(persona, request, _transcript(beats))
+            )
+            if line:
+                beats.append(Beat(label=LABEL_CLASH, speaker=name, text=line))
+
+        # Final: moderator verdict + per-voice alignment.
+        verdict, chair_line, alignment = await self._verdict(
+            request, _transcript(beats), names
         )
-        clash_beats = [
-            Beat(label=LABEL_CLASH, speaker=name, text=line)
-            for name, line in zip(names, clash_lines)
-            if line
-        ]
-
-        full_transcript = _transcript(opening_beats + clash_beats)
-
-        # Wave 3: moderator verdict.
-        verdict, chair_line = await self._verdict(request, full_transcript)
-        verdict_beat = Beat(
-            label=LABEL_VERDICT, speaker="Council chair", text=chair_line
+        beats.append(
+            Beat(label=LABEL_VERDICT, speaker="Council chair", text=chair_line)
         )
-
-        beats = opening_beats + clash_beats + [verdict_beat]
-        return CouncilResult(beats=beats, verdict=verdict)
+        return CouncilResult(beats=beats, verdict=verdict, alignment=alignment)
 
     async def add_audio(
         self, result: CouncilResult, request: CouncilRequest
@@ -220,11 +213,13 @@ class CouncilOrchestrator(BaseAgent):
         return result
 
     async def _verdict(
-        self, request: CouncilRequest, transcript: str
-    ) -> tuple[Verdict, str]:
+        self, request: CouncilRequest, transcript: str, names: list[str]
+    ) -> tuple[Verdict, str, list[Alignment]]:
         try:
             ruling = await asyncio.wait_for(
-                voices.moderate(personas.moderator_prompt(request, transcript)),
+                voices.moderate(
+                    personas.moderator_prompt(request, transcript, names)
+                ),
                 timeout=MODERATOR_TIMEOUT_S,
             )
         except Exception:
@@ -240,5 +235,51 @@ class CouncilOrchestrator(BaseAgent):
             or "Revisit with clearer constraints and more context.",
             firstMove=str(ruling.get("firstMove", "")).strip()
             or "Write down the single fact that would most change this decision.",
+            flipRisk=str(ruling.get("flipRisk", "")).strip(),
         )
-        return verdict, chair_line
+        alignment = self._parse_alignment(ruling.get("alignment"), names)
+        return verdict, chair_line, alignment
+
+    @staticmethod
+    def _parse_alignment(raw: object, names: list[str]) -> list[Alignment]:
+        by_name: dict[str, Alignment] = {}
+        if isinstance(raw, list):
+            for item in raw:
+                if not isinstance(item, dict):
+                    continue
+                agent = str(item.get("agent", "")).strip()
+                if not agent:
+                    continue
+                try:
+                    agreement = int(float(item.get("agreement", 50)))
+                except (TypeError, ValueError):
+                    agreement = 50
+                agreement = max(0, min(100, agreement))
+                by_name[agent.lower()] = Alignment(
+                    agent=agent,
+                    agreement=agreement,
+                    keyConcerns=str(item.get("keyConcerns", "")).strip(),
+                )
+
+        # Ensure every council voice has an entry, in roster order. Match exactly
+        # first, then fall back to fuzzy matching (the model sometimes shortens
+        # names, e.g. "Buddy" for "Sarcastic buddy").
+        result: list[Alignment] = []
+        for name in names:
+            key = name.lower()
+            match = by_name.get(key)
+            if match is None:
+                for other_key, other in by_name.items():
+                    if other_key in key or key in other_key:
+                        match = Alignment(
+                            agent=name,
+                            agreement=other.agreement,
+                            keyConcerns=other.keyConcerns,
+                        )
+                        break
+            result.append(
+                match
+                if match is not None
+                else Alignment(agent=name, agreement=50, keyConcerns="")
+            )
+        return result

@@ -69,12 +69,21 @@ class Verdict:
     decision: str
     conditions: str
     firstMove: str
+    flipRisk: str = ""
+
+
+@dataclass
+class Alignment:
+    agent: str
+    agreement: int
+    keyConcerns: str
 
 
 @dataclass
 class CouncilResult:
     beats: list[Beat]
     verdict: Verdict
+    alignment: list[Alignment] = field(default_factory=list)
 
     def to_json(self) -> str:
         return json.dumps(
@@ -100,7 +109,16 @@ class CouncilResult:
                     "decision": self.verdict.decision,
                     "conditions": self.verdict.conditions,
                     "firstMove": self.verdict.firstMove,
+                    "flipRisk": self.verdict.flipRisk,
                 },
+                "alignment": [
+                    {
+                        "agent": a.agent,
+                        "agreement": a.agreement,
+                        "keyConcerns": a.keyConcerns,
+                    }
+                    for a in self.alignment
+                ],
             },
             ensure_ascii=False,
         )

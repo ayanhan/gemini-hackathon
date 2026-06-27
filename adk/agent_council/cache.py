@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 import os
 
-from .schema import Beat, CouncilResult, Verdict
+from .schema import Alignment, Beat, CouncilResult, Verdict
 
 _CACHE_PATH = os.path.join(os.path.dirname(__file__), "demo_cache.json")
 
@@ -46,5 +46,15 @@ def load_cached_result() -> CouncilResult | None:
         decision=str(verdict_raw.get("decision", "")),
         conditions=str(verdict_raw.get("conditions", "")),
         firstMove=str(verdict_raw.get("firstMove", "")),
+        flipRisk=str(verdict_raw.get("flipRisk", "")),
     )
-    return CouncilResult(beats=beats, verdict=verdict)
+    alignment = [
+        Alignment(
+            agent=str(a.get("agent", "")),
+            agreement=int(a.get("agreement", 50)),
+            keyConcerns=str(a.get("keyConcerns", "")),
+        )
+        for a in data.get("alignment", [])
+        if isinstance(a, dict)
+    ]
+    return CouncilResult(beats=beats, verdict=verdict, alignment=alignment)

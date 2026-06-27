@@ -73,19 +73,14 @@ Make sure you have Node.js installed.
    ```bash
    npm install
    ```
-3. Copy `.env.example` to create your local environment file:
+3. For local dev, copy `.env.example`:
    ```bash
-   cp .env.example .env.local
+   cp .env.example .env          # ADK backend reads this
+   cp .env.example .env.local    # Vite frontend reads this
    ```
-4. Add your configuration keys to `.env.local`:
-   * **Direct Gemini Mode**:
-     ```bash
-     VITE_GEMINI_API_KEY=your_google_gemini_api_key
-     ```
-   * **ADK Server Mode**:
-     ```bash
-     VITE_ADK_API_URL=your_adk_server_api_url
-     ```
+4. Configure one of these local modes:
+   * **ADK Server Mode (recommended)** — set `VITE_ADK_API_URL=http://127.0.0.1:8000` in `.env.local` and `GOOGLE_API_KEY` (or Vertex + `GOOGLE_CLOUD_PROJECT`) in `.env`, then run `npm run adk:serve` in a second terminal.
+   * **Direct Gemini Mode** — set `VITE_GEMINI_API_KEY` in `.env.local` (no backend needed; council only).
 
 ### Scripts
 
@@ -93,28 +88,38 @@ Make sure you have Node.js installed.
 * **`npm run build`**: Type-check (TypeScript) and compile optimized production assets.
 * **`npm run lint`**: Analyze code quality using Oxlint (0 warnings, 0 errors).
 * **`npm run preview`**: Run a local server previewing the compiled production assets.
-* **`npm run gcp:deploy:adk`**: Deploy the ADK backend to Cloud Run.
-* **`npm run gcp:deploy:web`**: Deploy the Vite frontend to Cloud Run.
+* **`npm run gcp:setup`**: One-time GCP setup (APIs + Vertex IAM for Cloud Run).
+* **`npm run gcp:deploy`**: Deploy backend and frontend; frontend auto-wires to the ADK URL.
+* **`npm run gcp:deploy:adk`**: Deploy only the ADK backend.
+* **`npm run gcp:deploy:web`**: Deploy only the frontend (resolves ADK URL from Cloud Run).
 
-## ☁️ Cloud Run
+## ☁️ Cloud Run (production)
 
-The production frontend container bakes in the deployed ADK backend URL:
+Live production uses **no `.env` files** and **no API keys in containers**. The backend authenticates to Gemini via Vertex AI and the Cloud Run service account. The frontend gets `VITE_ADK_API_URL` baked in at Docker build time.
 
-```text
-https://venn-adk-zv6rjy4tva-uc.a.run.app
-```
-
-Deploy backend first, then frontend:
+### One-time setup
 
 ```bash
-export GOOGLE_CLOUD_PROJECT=gen-lang-client-0569491900
-export CLOUD_RUN_REGION=us-central1
-export GOOGLE_CLOUD_LOCATION=global
-export AGENT_COUNCIL_MODEL=gemini-3.5-flash
+export GOOGLE_CLOUD_PROJECT=your-gcp-project-id
+export CLOUD_RUN_REGION=us-central1   # optional
 
-npm run gcp:deploy:adk
-npm run gcp:deploy:web
+npm run gcp:setup    # enables APIs + grants Vertex AI to Cloud Run SA
+npm run gcp:deploy   # deploys ADK, then web with the correct backend URL
 ```
+
+You need `gcloud` authenticated (`gcloud auth login`) with permission to enable APIs and grant IAM on the project.
+
+### Redeploying
+
+```bash
+export GOOGLE_CLOUD_PROJECT=your-gcp-project-id
+npm run gcp:deploy          # both services
+# or
+npm run gcp:deploy:adk      # backend only
+npm run gcp:deploy:web      # frontend only (auto-fetches ADK URL)
+```
+
+Optional overrides: `GOOGLE_CLOUD_LOCATION`, `AGENT_COUNCIL_MODEL`, `ADK_CLOUD_RUN_SERVICE`, `WEB_CLOUD_RUN_SERVICE`, or `VITE_ADK_API_URL` (skip auto-discovery).
 
 ## The team
 ![The Venn Team](presentation/versions_of_you.jpeg)

@@ -147,22 +147,34 @@ def _extract_json(text: str) -> dict:
     if raw.startswith("```"):
         raw = re.sub(r"^```(?:json)?", "", raw).strip()
         raw = re.sub(r"```$", "", raw).strip()
-    return json.loads(raw)
+    # Decode only the first JSON object; the model occasionally appends trailing
+    # text after a valid object (json.loads would raise "Extra data").
+    start = raw.find("{")
+    if start == -1:
+        return json.loads(raw)
+    obj, _ = json.JSONDecoder().raw_decode(raw[start:])
+    return obj
 
 
-async def moderate(prompt: str) -> dict:
-    """Generate the chair's verdict as a structured dict."""
-    response = await get_client().aio.models.generate_content(
-        model=MODEL,
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            temperature=0.6,
-            response_mime_type="application/json",
-            max_output_tokens=512,
-            thinking_config=types.ThinkingConfig(thinking_budget=0),
-        ),
-    )
-    return _extract_json(response.text or "")
+async def moderate(prompt: str, *, attempts: int = 2) -> dict:
+    """Generate the chair's verdict as a structured dict, retrying once on failure."""
+    last_error: Exception | None = None
+    for _ in range(max(1, attempts)):
+        try:
+            response = await get_client().aio.models.generate_content(
+                model=MODEL,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    temperature=0.6,
+                    response_mime_type="application/json",
+                    max_output_tokens=1536,
+                    thinking_config=types.ThinkingConfig(thinking_budget=0),
+                ),
+            )
+            return _extract_json(response.text or "")
+        except Exception as error:  # noqa: BLE001 - retry on any transient failure
+            last_error = error
+    raise last_error if last_error else RuntimeError("moderate failed")
 
 
 async def synthesize_speech(

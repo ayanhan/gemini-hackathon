@@ -3,52 +3,75 @@
     {
       "label": "Opening",
       "speaker": "Mentor",
-      "text": "At thirty-four, with nine months of runway and family planning on the horizon, we don't jump until we have designed the first test."
+      "text": "Nine months of runway and a family in the queue means we need one paying customer before you touch that resignation letter."
     },
     {
       "label": "Opening",
       "speaker": "Sarcastic buddy",
-      "text": "You think it feels easy because your nine-month runway hasn't met a real customer or a baby diaper yet, so show me buyers."
+      "text": "Nine months of savings with a family on the way doesn't mean starting a business is easy, it means your runway is actually four."
     },
     {
       "label": "Opening",
       "speaker": "18-year-old you",
-      "text": "You are thirty-four, sitting on nine months of runway, bored by easy, and you said you did not want a safe life. Let’s jump."
+      "text": "Nine months of savings and zero kids is the most runway we will ever have; at thirty-four, waiting longer is just called surrender."
     },
     {
       "label": "Opening",
       "speaker": "Scared parents",
-      "text": "Nine months of savings disappears fast, and you are starting a family at thirty-four; please do not jump without a net."
+      "text": "You have exactly nine months of savings, a partner, and a family to plan, so we need verified health insurance costs before you leap."
     },
     {
       "label": "Rebuttal",
       "speaker": "Mentor",
-      "text": "To eighteen-year-old me: Boredom isn't a strategy, and jumping blind risks the family we want. We build the net before we leap."
+      "text": "Eighteen-year-old self, waiting is not surrender when nine months of savings instantly shrinks to four the moment we pay for a family's healthcare."
     },
     {
       "label": "Rebuttal",
       "speaker": "Sarcastic buddy",
-      "text": "Eighteen-year-old me, you couldn't even afford a real beer, so stop pretending nine months of savings pays for diapers and server costs."
+      "text": "Eighteen-year-old me, shut up. At thirty-four, baby formula costs money, and \"surrender\" is just what you call paying rent on time."
     },
     {
       "label": "Rebuttal",
       "speaker": "18-year-old you",
-      "text": "Parents, \"safe\" is how he ended up thirty-four and bored; nine months is an eternity to build freedom before the baby arrives."
+      "text": "Mentor, if we wait for that first customer while playing it safe, we'll bleed our nine-month runway dry on hesitation, not execution."
     },
     {
       "label": "Rebuttal",
       "speaker": "Scared parents",
-      "text": "Eighteen-year-old self, you don't have to pay for a baby's health insurance or mortgage, so stop telling us to jump into ruin."
+      "text": "Eighteen-year-old self, nine months evaporates instantly when you're paying for prenatal care and family health insurance out of pocket. Wake up."
     },
     {
       "label": "Verdict",
       "speaker": "Council chair",
-      "text": "You have the hunger and the runway, but jumping without a validated market risks the very family stability you are planning to build."
+      "text": "At thirty-four, with a family on the horizon, freedom is earned through calculated execution, not blind leaps of faith."
     }
   ],
   "verdict": {
-    "decision": "Do not quit yet; transition by securing your first paying customer while keeping your day job.",
-    "conditions": "You must secure one recurring client or three pre-sales to prove market demand before resigning.",
-    "firstMove": "Draft a landing page for your side project with a pre-order button and share it with ten potential customers."
-  }
+    "decision": "Go full-time with your business, but only after securing your first paying customer.",
+    "conditions": "You must land one paying client and secure a viable family healthcare plan before resigning.",
+    "firstMove": "Draft a pitch email to three warm leads from your past side projects to secure that first client.",
+    "flipRisk": "If your partner becomes pregnant before you secure a paying client, you must stay employed."
+  },
+  "alignment": [
+    {
+      "agent": "Mentor",
+      "agreement": 100,
+      "keyConcerns": "Securing one paying customer before launching to protect the runway."
+    },
+    {
+      "agent": "Sarcastic buddy",
+      "agreement": 80,
+      "keyConcerns": "Underestimating the true, rapid burn rate of family expenses."
+    },
+    {
+      "agent": "18-year-old you",
+      "agreement": 70,
+      "keyConcerns": "Allowing fear and endless planning to kill the dream entirely."
+    },
+    {
+      "agent": "Scared parents",
+      "agreement": 75,
+      "keyConcerns": "Losing stable health insurance during prenatal care and family planning."
+    }
+  ]
 }
