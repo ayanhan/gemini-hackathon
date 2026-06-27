@@ -71,12 +71,42 @@
   color: var(--ink);
 }
 
+/* Rotating accent — reserve 2 lines so the layout never jumps */
+.landing-rotator {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 2.12em;
+  margin-top: 0.06em;
+}
+
 .landing-accent {
+  display: inline-block;
   background: var(--primary-gradient);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
+  animation: landingAccentIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes landingAccentIn {
+  from {
+    opacity: 0;
+    transform: translateY(0.45em);
+    filter: blur(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-accent {
+    animation: none;
+  }
 }
 
 .landing-sub {
