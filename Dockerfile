@@ -2,7 +2,7 @@ FROM node:22-alpine AS build
 
 WORKDIR /app
 
-ARG VITE_ADK_API_URL=https://venn-adk-zv6rjy4tva-uc.a.run.app
+ARG VITE_ADK_API_URL=https://venn-backend-79528542522.us-central1.run.app
 ENV VITE_ADK_API_URL=${VITE_ADK_API_URL}
 
 COPY package*.json ./
