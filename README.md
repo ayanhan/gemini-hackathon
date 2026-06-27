@@ -101,7 +101,7 @@ Make sure you have Node.js installed.
 The production frontend container bakes in the deployed ADK backend URL:
 
 ```text
-https://agent-council-adk-zv6rjy4tva-uc.a.run.app
+https://venn-adk-zv6rjy4tva-uc.a.run.app
 ```
 
 Deploy backend first, then frontend:
