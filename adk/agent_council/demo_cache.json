@@ -3,75 +3,75 @@
     {
       "label": "Opening",
       "speaker": "Mentor",
-      "text": "Nine months of runway and a family in the queue means we need one paying customer before you touch that resignation letter."
+      "text": "At thirty-four, with nine months of savings and a family on the horizon, your runway is actually closer to four."
     },
     {
       "label": "Opening",
       "speaker": "Sarcastic buddy",
-      "text": "Nine months of savings with a family on the way doesn't mean starting a business is easy, it means your runway is actually four."
+      "text": "Mentor is spot on; nine months of runway is a fantasy when you're factoring in diapers, baby gear, and actual business expenses."
     },
     {
       "label": "Opening",
       "speaker": "18-year-old you",
-      "text": "Nine months of savings and zero kids is the most runway we will ever have; at thirty-four, waiting longer is just called surrender."
+      "text": "Mentor, nine months is a hard, verified fact today, and waiting for a baby that isn't even here yet makes our runway zero."
     },
     {
       "label": "Opening",
       "speaker": "Scared parents",
-      "text": "You have exactly nine months of savings, a partner, and a family to plan, so we need verified health insurance costs before you leap."
+      "text": "Eighteen-year-old, a baby isn't \"zero runway,\" it is a real, high-cost health insurance fact we cannot ignore while planning this transition."
     },
     {
       "label": "Rebuttal",
       "speaker": "Mentor",
-      "text": "Eighteen-year-old self, waiting is not surrender when nine months of savings instantly shrinks to four the moment we pay for a family's healthcare."
+      "text": "Eighteen-year-old, the baby isn't here, but the health insurance shift is instant. Losing employer coverage shrinks your nine months to five, today."
     },
     {
       "label": "Rebuttal",
       "speaker": "Sarcastic buddy",
-      "text": "Eighteen-year-old me, shut up. At thirty-four, baby formula costs money, and \"surrender\" is just what you call paying rent on time."
+      "text": "Mentor, you are giving him way too much credit; that five-month runway assumes he actually launches something instead of just reorganizing his Figma files."
     },
     {
       "label": "Rebuttal",
       "speaker": "18-year-old you",
-      "text": "Mentor, if we wait for that first customer while playing it safe, we'll bleed our nine-month runway dry on hesitation, not execution."
+      "text": "Sarcastic buddy, you're right. Our real risk isn't the baby; it's us playing pretend founder for five months without shipping a damn thing."
     },
     {
       "label": "Rebuttal",
       "speaker": "Scared parents",
-      "text": "Eighteen-year-old self, nine months evaporates instantly when you're paying for prenatal care and family health insurance out of pocket. Wake up."
+      "text": "Eighteen-year-old, shipping is great, but if you get sick or hurt while playing founder, that unprotected fall ruins your family's future instantly."
     },
     {
       "label": "Verdict",
       "speaker": "Council chair",
-      "text": "At thirty-four, with a family on the horizon, freedom is earned through calculated execution, not blind leaps of faith."
+      "text": "The time to build is now, but you must transition with a safety net, not a blind leap of faith."
     }
   ],
   "verdict": {
-    "decision": "Go full-time with your business, but only after securing your first paying customer.",
-    "conditions": "You must land one paying client and secure a viable family healthcare plan before resigning.",
-    "firstMove": "Draft a pitch email to three warm leads from your past side projects to secure that first client.",
-    "flipRisk": "If your partner becomes pregnant before you secure a paying client, you must stay employed."
+    "decision": "Yes, start your business, but transition part-time first to preserve health insurance and capital.",
+    "conditions": "You must secure independent health insurance and ship a paying beta before leaving your day job.",
+    "firstMove": "Draft a budget detailing family health insurance costs and define your minimum viable product scope tonight.",
+    "flipRisk": "A confirmed pregnancy or a drop in savings below six months before the first sale."
   },
   "alignment": [
     {
       "agent": "Mentor",
-      "agreement": 100,
-      "keyConcerns": "Securing one paying customer before launching to protect the runway."
+      "agreement": 80,
+      "keyConcerns": "Unrealistic runway calculations and immediate loss of employer-sponsored health insurance."
     },
     {
       "agent": "Sarcastic buddy",
-      "agreement": 80,
-      "keyConcerns": "Underestimating the true, rapid burn rate of family expenses."
+      "agreement": 70,
+      "keyConcerns": "Wasting precious runway on perfectionism and fake work instead of shipping."
     },
     {
       "agent": "18-year-old you",
-      "agreement": 70,
-      "keyConcerns": "Allowing fear and endless planning to kill the dream entirely."
+      "agreement": 90,
+      "keyConcerns": "Allowing fear and endless planning to kill the dream of ownership."
     },
     {
       "agent": "Scared parents",
-      "agreement": 75,
-      "keyConcerns": "Losing stable health insurance during prenatal care and family planning."
+      "agreement": 60,
+      "keyConcerns": "Exposing a growing family to catastrophic financial and medical risks."
     }
   ]
 }
