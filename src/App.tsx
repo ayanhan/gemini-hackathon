@@ -153,19 +153,6 @@ const hasProfile = Boolean(
   (storedProfile.memory ?? '').trim() || (storedProfile.aboutYou ?? '').trim(),
 )
 
-const mergeStoredContext = (
-  storedContext: UserContextAnswer[] | undefined,
-) =>
-  defaultUserContext.map((defaultAnswer) => {
-    const savedAnswer = storedContext?.find(
-      (item) => item.question === defaultAnswer.question,
-    )
-
-    return savedAnswer
-      ? { ...defaultAnswer, answer: savedAnswer.answer }
-      : defaultAnswer
-  })
-
 const contextFromPairs = (pairs: Array<[string, string]>): UserContextAnswer[] =>
   pairs.map(([question, answer]) => ({ question, answer }))
 
