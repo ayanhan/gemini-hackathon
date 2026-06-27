@@ -122,6 +122,8 @@ class CouncilOrchestrator(BaseAgent):
 
         yield Event(
             author=self.name,
+            invocation_id=ctx.invocation_id,
+            branch=ctx.branch,
             content=types.Content(
                 role="model",
                 parts=[types.Part(text=result.to_json())],
