@@ -129,9 +129,11 @@ function App() {
       const result = await runCouncil(trimmedQuestion, selectedAgents)
       setCouncilResult(result)
       setStatusMessage(
-        result.source === 'gemini'
-          ? 'Generated live with Gemini.'
-          : 'Using local fallback because no Gemini key is configured.',
+        result.source === 'adk'
+          ? 'Generated through the Google ADK council agent.'
+          : result.source === 'gemini'
+            ? 'Generated live with Gemini.'
+            : 'Using local fallback because no Gemini key is configured.',
       )
     } catch (error) {
       setCouncilResult(fallbackCouncilResult)
@@ -253,7 +255,11 @@ function App() {
             </div>
             <span className="voice-pill">
               <Mic2 size={16} aria-hidden="true" />
-              {councilResult.source === 'gemini' ? 'gemini-live' : 'fallback'}
+              {councilResult.source === 'adk'
+                ? 'adk-agent'
+                : councilResult.source === 'gemini'
+                  ? 'gemini-live'
+                  : 'fallback'}
             </span>
           </div>
 

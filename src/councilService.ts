@@ -24,7 +24,7 @@ export type Verdict = {
 export type CouncilResult = {
   beats: DebateBeat[]
   verdict: Verdict
-  source: 'gemini' | 'fallback'
+  source: 'adk' | 'gemini' | 'fallback'
 }
 
 const fallbackResult: Omit<CouncilResult, 'source'> = {
@@ -101,6 +101,18 @@ Rules:
 - The verdict must match the user's actual decision, not generic advice.`
 }
 
+const buildCouncilPayload = (question: string, agents: CouncilAgent[]) =>
+  JSON.stringify({
+    question,
+    agents: agents.map((agent) => ({
+      name: agent.name,
+      seat: agent.seat,
+      tone: agent.tone,
+      stance: agent.stance,
+      line: agent.line,
+    })),
+  })
+
 const parseCouncilResult = (text: string): Omit<CouncilResult, 'source'> => {
   const parsed = JSON.parse(text) as Partial<CouncilResult>
 
@@ -130,11 +142,84 @@ const parseCouncilResult = (text: string): Omit<CouncilResult, 'source'> => {
   }
 }
 
+const extractTextFromAdkResponse = (value: unknown): string => {
+  if (typeof value === 'string') {
+    return value
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(extractTextFromAdkResponse).find(Boolean) ?? ''
+  }
+
+  if (!value || typeof value !== 'object') {
+    return ''
+  }
+
+  const record = value as Record<string, unknown>
+
+  if (typeof record.text === 'string') {
+    return record.text
+  }
+
+  return [
+    record.content,
+    record.parts,
+    record.candidates,
+    record.events,
+    record.response,
+  ]
+    .map(extractTextFromAdkResponse)
+    .find(Boolean) ?? ''
+}
+
+const runCouncilWithAdk = async (
+  question: string,
+  agents: CouncilAgent[],
+  adkApiUrl: string,
+): Promise<CouncilResult> => {
+  const sessionId = `council-${crypto.randomUUID()}`
+  const response = await fetch(
+    `${adkApiUrl.replace(/\/$/, '')}/apps/agent_council/run`,
+    {
+      body: JSON.stringify({
+        app_name: 'agent_council',
+        user_id: 'agent-council-web',
+        session_id: sessionId,
+        new_message: {
+          role: 'user',
+          parts: [{ text: buildCouncilPayload(question, agents) }],
+        },
+      }),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      method: 'POST',
+    },
+  )
+
+  if (!response.ok) {
+    throw new Error(`ADK server returned ${response.status}.`)
+  }
+
+  const payload: unknown = await response.json()
+  const text = extractTextFromAdkResponse(payload)
+
+  return {
+    ...parseCouncilResult(text),
+    source: 'adk',
+  }
+}
+
 export const runCouncil = async (
   question: string,
   agents: CouncilAgent[],
 ): Promise<CouncilResult> => {
+  const adkApiUrl = import.meta.env.VITE_ADK_API_URL
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY
+
+  if (adkApiUrl) {
+    return runCouncilWithAdk(question, agents, adkApiUrl)
+  }
 
   if (!apiKey) {
     return { ...fallbackResult, source: 'fallback' }

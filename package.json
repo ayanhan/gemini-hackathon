@@ -4,6 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "adk:install": "python3 -m pip install -r adk/requirements.txt",
+    "adk:server": "adk api_server --auto_create_session adk",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
