@@ -1,0 +1,8 @@
+.env
+.env.*
+.git
+.venv
+adk
+dist
+node_modules
+*.log

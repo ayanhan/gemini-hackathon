@@ -93,3 +93,25 @@ Make sure you have Node.js installed.
 * **`npm run build`**: Type-check (TypeScript) and compile optimized production assets.
 * **`npm run lint`**: Analyze code quality using Oxlint (0 warnings, 0 errors).
 * **`npm run preview`**: Run a local server previewing the compiled production assets.
+* **`npm run gcp:deploy:adk`**: Deploy the ADK backend to Cloud Run.
+* **`npm run gcp:deploy:web`**: Deploy the Vite frontend to Cloud Run.
+
+## ☁️ Cloud Run
+
+The production frontend container bakes in the deployed ADK backend URL:
+
+```text
+https://agent-council-adk-zv6rjy4tva-uc.a.run.app
+```
+
+Deploy backend first, then frontend:
+
+```bash
+export GOOGLE_CLOUD_PROJECT=gen-lang-client-0569491900
+export CLOUD_RUN_REGION=us-central1
+export GOOGLE_CLOUD_LOCATION=global
+export AGENT_COUNCIL_MODEL=gemini-3.5-flash
+
+npm run gcp:deploy:adk
+npm run gcp:deploy:web
+```
