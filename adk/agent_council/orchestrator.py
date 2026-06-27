@@ -156,46 +156,36 @@ class CouncilOrchestrator(BaseAgent):
     async def deliberate(self, request: CouncilRequest) -> CouncilResult:
         council = (request.personas or _DEFAULT_PERSONAS)[:MAX_COUNCIL]
 
-        # Stable, unique display names shared across waves (and later TTS).
+        # Stable, unique display names shared across turns (and later TTS).
         used: dict[str, int] = {}
         names = [_dedupe_name(p.safe_name, used) for p in council]
 
-        # Wave 1: openings, in parallel.
-        opening_lines = await asyncio.gather(
-            *(_safe_speak(p, personas.opening_prompt(p, request)) for p in council)
-        )
-        opening_beats = [
-            Beat(label=LABEL_OPENING, speaker=name, text=line)
-            for name, line in zip(names, opening_lines)
-            if line
-        ]
+        beats: list[Beat] = []
 
-        opening_transcript = _transcript(opening_beats)
-
-        # Wave 2: rebuttals, in parallel, each having read every opening.
-        clash_lines = await asyncio.gather(
-            *(
-                _safe_speak(p, personas.clash_prompt(p, request, opening_transcript))
-                for p in council
+        # Round 1: opening exchange. Sequential so each voice hears the running
+        # conversation and builds on it instead of answering the prompt blind.
+        for persona, name in zip(council, names):
+            line = await _safe_speak(
+                persona, personas.opening_prompt(persona, request, _transcript(beats))
             )
-        )
-        clash_beats = [
-            Beat(label=LABEL_CLASH, speaker=name, text=line)
-            for name, line in zip(names, clash_lines)
-            if line
-        ]
+            if line:
+                beats.append(Beat(label=LABEL_OPENING, speaker=name, text=line))
 
-        full_transcript = _transcript(opening_beats + clash_beats)
+        # Round 2: deepening clash, still a flowing sequential discussion.
+        for persona, name in zip(council, names):
+            line = await _safe_speak(
+                persona, personas.clash_prompt(persona, request, _transcript(beats))
+            )
+            if line:
+                beats.append(Beat(label=LABEL_CLASH, speaker=name, text=line))
 
-        # Wave 3: moderator verdict + per-voice alignment.
+        # Final: moderator verdict + per-voice alignment.
         verdict, chair_line, alignment = await self._verdict(
-            request, full_transcript, names
+            request, _transcript(beats), names
         )
-        verdict_beat = Beat(
-            label=LABEL_VERDICT, speaker="Council chair", text=chair_line
+        beats.append(
+            Beat(label=LABEL_VERDICT, speaker="Council chair", text=chair_line)
         )
-
-        beats = opening_beats + clash_beats + [verdict_beat]
         return CouncilResult(beats=beats, verdict=verdict, alignment=alignment)
 
     async def add_audio(

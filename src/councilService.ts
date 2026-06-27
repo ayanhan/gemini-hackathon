@@ -94,10 +94,16 @@ const buildUserContext = (userContext: UserContextAnswer[]) => {
     .join('\n')
 }
 
+const buildMemoryBlock = (memory: string) => {
+  const trimmed = memory.trim()
+  return trimmed ? trimmed : 'No saved memory about the user.'
+}
+
 const buildPrompt = (
   question: string,
   agents: CouncilAgent[],
   userContext: UserContextAnswer[],
+  memory: string,
 ) => {
   const agentBrief = agents
     .map(
@@ -113,6 +119,9 @@ ${question}
 
 User context:
 ${buildUserContext(userContext)}
+
+Saved memory about the user:
+${buildMemoryBlock(memory)}
 
 Selected agents:
 ${agentBrief}
@@ -155,9 +164,11 @@ const buildCouncilPayload = (
   question: string,
   agents: CouncilAgent[],
   userContext: UserContextAnswer[],
+  memory: string,
 ) =>
   JSON.stringify({
     question,
+    memory: memory.trim(),
     userContext: userContext
       .filter((item) => item.answer.trim())
       .map((item) => ({
@@ -257,6 +268,7 @@ const runCouncilWithAdk = async (
   question: string,
   agents: CouncilAgent[],
   userContext: UserContextAnswer[],
+  memory: string,
   adkApiUrl: string,
 ): Promise<CouncilResult> => {
   const sessionId = `council-${crypto.randomUUID()}`
@@ -284,7 +296,7 @@ const runCouncilWithAdk = async (
       session_id: sessionId,
       new_message: {
         role: 'user',
-        parts: [{ text: buildCouncilPayload(question, agents, userContext) }],
+        parts: [{ text: buildCouncilPayload(question, agents, userContext, memory) }],
       },
     }),
     headers: {
@@ -311,9 +323,32 @@ export const transcribeAudio = async (
   mimeType: string,
   questionText: string,
 ): Promise<string> => {
+  const adkApiUrl = import.meta.env.VITE_ADK_API_URL
+
+  // Preferred: transcribe on the backend (no client-side API key required).
+  if (adkApiUrl) {
+    const response = await fetch(`${adkApiUrl.replace(/\/$/, '')}/transcribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        audioBase64: base64Audio,
+        mimeType,
+        question: questionText,
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`Transcription failed (${response.status}).`)
+    }
+
+    const data = (await response.json()) as { text?: string }
+    return data.text?.trim() ?? ''
+  }
+
+  // Fallback: direct Gemini if a client key is configured.
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY
   if (!apiKey) {
-    throw new Error('Gemini API Key is not configured. Please supply it via VITE_GEMINI_API_KEY.')
+    throw new Error('Transcription is unavailable: no backend URL or Gemini key configured.')
   }
 
   const ai = new GoogleGenAI({ apiKey })
@@ -342,12 +377,13 @@ export const runCouncil = async (
   question: string,
   agents: CouncilAgent[],
   userContext: UserContextAnswer[],
+  memory: string = '',
 ): Promise<CouncilResult> => {
   const adkApiUrl = import.meta.env.VITE_ADK_API_URL
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY
 
   if (adkApiUrl) {
-    return runCouncilWithAdk(question, agents, userContext, adkApiUrl)
+    return runCouncilWithAdk(question, agents, userContext, memory, adkApiUrl)
   }
 
   if (!apiKey) {
@@ -357,7 +393,7 @@ export const runCouncil = async (
   const ai = new GoogleGenAI({ apiKey })
   const response = await ai.models.generateContent({
     model: 'gemini-3.5-flash',
-    contents: buildPrompt(question, agents, userContext),
+    contents: buildPrompt(question, agents, userContext, memory),
     config: {
       responseMimeType: 'application/json',
       temperature: 0.9,

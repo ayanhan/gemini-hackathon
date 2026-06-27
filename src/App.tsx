@@ -131,6 +131,41 @@ const stripCouncilAudio = (result: CouncilResult): CouncilResult => ({
   })),
 })
 
+const PROFILE_KEY = 'venn-profile-v1'
+
+type StoredProfile = {
+  aboutYou?: string
+  memory?: string
+}
+
+const loadProfile = (): StoredProfile => {
+  try {
+    const raw = window.localStorage.getItem(PROFILE_KEY)
+    return raw ? (JSON.parse(raw) as StoredProfile) : {}
+  } catch {
+    return {}
+  }
+}
+
+const storedProfile = loadProfile()
+
+const hasProfile = Boolean(
+  (storedProfile.memory ?? '').trim() || (storedProfile.aboutYou ?? '').trim(),
+)
+
+const mergeStoredContext = (
+  storedContext: UserContextAnswer[] | undefined,
+) =>
+  defaultUserContext.map((defaultAnswer) => {
+    const savedAnswer = storedContext?.find(
+      (item) => item.question === defaultAnswer.question,
+    )
+
+    return savedAnswer
+      ? { ...defaultAnswer, answer: savedAnswer.answer }
+      : defaultAnswer
+  })
+
 const contextFromPairs = (pairs: Array<[string, string]>): UserContextAnswer[] =>
   pairs.map(([question, answer]) => ({ question, answer }))
 
@@ -321,8 +356,11 @@ function App() {
   const audioChunksRef = useRef<Blob[]>([])
   const councilAudioRef = useRef<HTMLAudioElement | null>(null)
 
-  const [screen, setScreen] = useState<'input' | 'assembly' | 'deliberating' | 'verdict'>(
-    'input',
+  const [aboutYou, setAboutYou] = useState(storedProfile.aboutYou ?? '')
+  const [memory, setMemory] = useState(storedProfile.memory ?? '')
+
+  const [screen, setScreen] = useState<'profile' | 'input' | 'assembly' | 'deliberating' | 'verdict'>(
+    storedState.councilResult ? 'verdict' : hasProfile ? 'input' : 'profile'
   )
   const [category, setCategory] = useState<PresetCategory>(initialCategory)
   const [debateViewMode, setDebateViewMode] = useState<'threaded' | 'roundtable'>('threaded')
@@ -450,6 +488,18 @@ function App() {
   useEffect(() => {
     setCurrentStep((step) => Math.min(step, questionCount))
   }, [questionCount])
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      PROFILE_KEY,
+      JSON.stringify({ aboutYou, memory }),
+    )
+  }, [aboutYou, memory])
+
+  const memoryPayload = useMemo(
+    () => [aboutYou.trim(), memory.trim()].filter(Boolean).join('\n'),
+    [aboutYou, memory],
+  )
 
   const toggleAgent = (agentId: string) => {
     setSelectedAgentIds((currentIds) => {
@@ -622,6 +672,7 @@ function App() {
         trimmedQuestion,
         selectedAgents,
         userContext,
+        memoryPayload,
       )
       setCouncilResult(result)
       setStatusMessage(
@@ -658,6 +709,13 @@ function App() {
           {screen === 'input' && (
             <>
               <button className="header-nav-btn active" type="button">New council</button>
+              <button
+                className="header-nav-btn"
+                onClick={() => setScreen('profile')}
+                type="button"
+              >
+                Edit profile
+              </button>
               <button 
                 className="header-nav-btn" 
                 onClick={() => storedState.councilResult && setScreen('verdict')}
@@ -686,6 +744,74 @@ function App() {
           )}
         </div>
       </header>
+
+      {/* Screen 0: One-time profile + memory */}
+      {screen === 'profile' && (
+        <section className="screen-input-layout" aria-label="Profile setup screen">
+          <div className="input-hero-copy">
+            <span className="mono-label">One-time setup</span>
+            <h1 className="hero-title">
+              Tell the council <span className="gradient-text">about you.</span>
+            </h1>
+            <p className="hero-description">
+              This is remembered across every decision so the debate stays grounded in your
+              real situation. You can edit it anytime.
+            </p>
+
+            <div className="input-card-panel" aria-label="Profile input card">
+              <div className="card-header-row">
+                <span className="card-heading">A bit about you</span>
+              </div>
+              <textarea
+                className="decision-textarea"
+                value={aboutYou}
+                onChange={(e) => setAboutYou(e.target.value)}
+                placeholder="e.g. 34, partnered, work in marketing, taught myself to code, ~9 months of savings."
+                rows={3}
+              />
+              <div className="card-header-row" style={{ marginTop: '1rem' }}>
+                <span className="card-heading">Memory — what should the council always know?</span>
+              </div>
+              <textarea
+                className="decision-textarea"
+                value={memory}
+                onChange={(e) => setMemory(e.target.value)}
+                placeholder="e.g. I tend to overthink. I value freedom over money. We are planning a family."
+                rows={3}
+              />
+              <div className="card-footer-row">
+                <span className="card-footer-info">Stored only on this device</span>
+                <button
+                  className="btn-convene"
+                  onClick={() => setScreen('input')}
+                  type="button"
+                >
+                  {hasProfile ? 'Save & continue' : 'Continue'} <span className="arrow">→</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="input-bottom-row">
+              <span className="privacy-badge">🔒 Private by default — stored locally in your browser</span>
+            </div>
+          </div>
+
+          <div className="input-hero-visual" aria-label="Profile visual">
+            <div className="radial-blur-glow"></div>
+            <div className="visual-circle-orbit">
+              <div className="orbit-gradient-ring"></div>
+              <div className="orbit-inner-bg"></div>
+              <div className="orbit-dashed-ring"></div>
+              <div className="orbit-center-call">
+                <div className="center-call-icon">
+                  <div className="center-call-dot"></div>
+                </div>
+                <span className="center-call-label">YOU</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Screen 1: Input Page */}
       {screen === 'input' && (

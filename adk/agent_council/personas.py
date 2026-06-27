@@ -61,14 +61,26 @@ def _compose(persona: Persona, hat: Hat, body: str) -> str:
 {_SHARED_RULES}"""
 
 
-def opening_prompt(persona: Persona, request: CouncilRequest) -> str:
+def opening_prompt(persona: Persona, request: CouncilRequest, transcript: str = "") -> str:
+    if transcript.strip():
+        situation = f"""The discussion so far:
+{transcript}
+
+Jump in like you are mid-conversation. React to what was JUST said — agree, push
+back, or build on it — and address that voice by name. Then add your own angle
+from your seat. Do NOT restate points already on the table; move the talk forward."""
+    else:
+        situation = (
+            "You speak first. Open the discussion from your seat in one sharp line "
+            "and set the tone for the others to respond to."
+        )
     body = f"""The decision on the table:
 {request.question}
 
 What you know about the user:
 {context_block(request)}
 
-Give your OPENING take on this decision from your seat. Plant your flag."""
+{situation}"""
     return _compose(persona, Hat.WHITE, body)
 
 
@@ -79,11 +91,12 @@ def clash_prompt(persona: Persona, request: CouncilRequest, transcript: str) -> 
 What you know about the user:
 {context_block(request)}
 
-The council just opened. Here is what everyone said:
+The discussion so far:
 {transcript}
 
-Now REACT. Push back on a voice you disagree with, or sharpen the strongest point.
-Name who you are answering. Do not repeat your opening."""
+Keep the conversation flowing like a podcast. Pick up directly from the last thing
+said, name who you are answering, then sharpen, counter, or extend it and nudge the
+group toward a decision. Build on the thread — never repeat a point already made."""
     return _compose(persona, Hat.BLACK, body)
 
 
