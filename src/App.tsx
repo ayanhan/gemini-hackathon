@@ -74,22 +74,20 @@ const councilAgents: CouncilAgent[] = [
   },
 ]
 
-const interviewQuestions = [
-  'What outcome do you want most from this decision?',
-  'What are you afraid will happen if you choose wrong?',
-  'How much money runway do you have?',
-  'Who depends on you or will be affected?',
-  'What deadline or timing pressure exists?',
-  'What have you already tried?',
-  'What evidence would make this a clear yes?',
-  'What evidence would make this a clear no?',
-  'What personal value should the council protect?',
-  'What is one constraint the council must respect?',
-]
+const presetCategories = [
+  'Startup',
+  'Career move',
+  'Relationship',
+  'Money & risk',
+  'Creative project',
+] as const
+
+type PresetCategory = typeof presetCategories[number]
 
 const STORAGE_KEY = 'agent-council-state-v1'
 
 type StoredCouncilState = {
+  category?: PresetCategory
   councilResult?: CouncilResult
   customAgents?: CouncilAgent[]
   question?: string
@@ -98,18 +96,14 @@ type StoredCouncilState = {
 }
 
 type CouncilPreset = {
-  answers: string[]
   agentIds: string[]
+  category: PresetCategory
+  context: UserContextAnswer[]
   label: string
   question: string
 }
 
 const defaultQuestion = 'Should I quit my 9-to-5 and build a startup?'
-
-const defaultUserContext = interviewQuestions.map((interviewQuestion) => ({
-  question: interviewQuestion,
-  answer: '',
-}))
 
 const loadStoredState = (): StoredCouncilState => {
   try {
@@ -127,19 +121,6 @@ const loadStoredState = (): StoredCouncilState => {
 
 const storedState = loadStoredState()
 
-const mergeStoredContext = (
-  storedContext: UserContextAnswer[] | undefined,
-) =>
-  defaultUserContext.map((defaultAnswer) => {
-    const savedAnswer = storedContext?.find(
-      (item) => item.question === defaultAnswer.question,
-    )
-
-    return savedAnswer
-      ? { ...defaultAnswer, answer: savedAnswer.answer }
-      : defaultAnswer
-  })
-
 const stripCouncilAudio = (result: CouncilResult): CouncilResult => ({
   ...result,
   beats: result.beats.map((beat) => ({
@@ -150,93 +131,142 @@ const stripCouncilAudio = (result: CouncilResult): CouncilResult => ({
   })),
 })
 
+const contextFromPairs = (pairs: Array<[string, string]>): UserContextAnswer[] =>
+  pairs.map(([question, answer]) => ({ question, answer }))
+
 const councilPresets: CouncilPreset[] = [
   {
+    category: 'Startup',
     label: 'Startup decision',
     question: 'Should I quit my job and build a startup full-time?',
     agentIds: ['mentor', 'buddy', 'failed', 'millionaire', 'parents'],
-    answers: [
-      'Build something real without losing momentum.',
-      'Quitting too early and running out of money.',
-      'About 6 months if I cut expenses.',
-      'My family and current team will feel the impact.',
-      'I want to decide within the next 30 days.',
-      'I have built a rough prototype and talked to a few users.',
-      'Paying customers or strong weekly user growth.',
-      'No one cares enough to use or pay for it.',
-      'Courage with financial discipline.',
-      'Do not burn bridges with my current job.',
-    ],
+    context: contextFromPairs([
+      ['What problem are you solving, and who feels it painfully today?', 'A specific workflow pain for small teams, not just a nice-to-have.'],
+      ['What proof do you have that people will pay or use it repeatedly?', 'A few users said they want it, but nobody has paid yet.'],
+      ['How much runway do you have if income drops?', 'About 6 months if I cut expenses.'],
+      ['What part of this startup depends only on you?', 'Product, customer calls, and the first sales motion.'],
+      ['What deadline or market window is pushing the decision?', 'I want to decide within the next 30 days.'],
+      ['What have you already shipped or tested?', 'I have built a rough prototype and talked to a few users.'],
+      ['What evidence would make quitting a clear yes?', 'Paying customers or strong weekly user growth.'],
+      ['What evidence would make staying employed a clear no-brainer?', 'No one cares enough to use or pay for it.'],
+      ['What personal value should the council protect?', 'Courage with financial discipline.'],
+      ['What guardrail would keep this from becoming reckless?', 'Do not burn bridges with my current job.'],
+    ]),
   },
   {
+    category: 'Relationship',
     label: 'Relationship decision',
     question: 'Should I stay in this relationship or move on?',
     agentIds: ['mentor', 'buddy', 'eighteen', 'parents'],
-    answers: [
-      'Clarity without being cruel or avoidant.',
-      'Wasting more time or hurting someone unnecessarily.',
-      'Money is not the main constraint.',
-      'My partner, close friends, and my emotional health.',
-      'I need to decide before another big commitment.',
-      'I have tried honest talks, space, and changing routines.',
-      'Consistent trust, effort, and calm communication.',
-      'Repeated avoidance, resentment, or incompatible futures.',
-      'Honesty and emotional safety.',
-      'Do not make the decision from one bad week.',
-    ],
+    context: contextFromPairs([
+      ['What do you want this relationship to feel like six months from now?', 'Clear, calm, and honest instead of stuck.'],
+      ['What pattern keeps repeating even after you talk about it?', 'Avoiding hard conversations until resentment builds.'],
+      ['What are you afraid will happen if you choose wrong?', 'Wasting more time or hurting someone unnecessarily.'],
+      ['Who will be affected by this decision?', 'My partner, close friends, and my emotional health.'],
+      ['What deadline or commitment makes this urgent?', 'I need to decide before another big commitment.'],
+      ['What have you already tried to repair or clarify things?', 'I have tried honest talks, space, and changing routines.'],
+      ['What evidence would make staying a clear yes?', 'Consistent trust, effort, and calm communication.'],
+      ['What evidence would make leaving the healthier choice?', 'Repeated avoidance, resentment, or incompatible futures.'],
+      ['What value should the council protect?', 'Honesty and emotional safety.'],
+      ['What should the council avoid overreacting to?', 'Do not make the decision from one bad week.'],
+    ]),
   },
   {
+    category: 'Career move',
     label: 'Career move',
     question: 'Should I take the new job or stay where I am?',
     agentIds: ['mentor', 'buddy', 'failed', 'millionaire', 'parents'],
-    answers: [
-      'A better learning curve and stronger long-term options.',
-      'Choosing prestige over actual growth.',
-      'Enough savings to handle a transition.',
-      'My family, manager, and future self.',
-      'The offer deadline is soon.',
-      'I compared role scope, compensation, team, and growth.',
-      'Clear ownership, better mentorship, and fair compensation.',
-      'Vague role, weak manager, or values mismatch.',
-      'Learning rate and integrity.',
-      'Do not ignore health or burnout signals.',
-    ],
+    context: contextFromPairs([
+      ['What does the new role give you that the current role cannot?', 'A better learning curve and stronger long-term options.'],
+      ['What are you afraid you are overvaluing?', 'Choosing prestige over actual growth.'],
+      ['How much financial or immigration risk does the move create?', 'Enough savings to handle a transition.'],
+      ['Who depends on you or will feel this change?', 'My family, manager, and future self.'],
+      ['What deadline or negotiation pressure exists?', 'The offer deadline is soon.'],
+      ['What have you compared between the two paths?', 'I compared role scope, compensation, team, and growth.'],
+      ['What evidence would make the new job a clear yes?', 'Clear ownership, better mentorship, and fair compensation.'],
+      ['What evidence would make staying the smarter move?', 'Vague role, weak manager, or values mismatch.'],
+      ['What value should the council protect?', 'Learning rate and integrity.'],
+      ['What constraint should not be ignored?', 'Do not ignore health or burnout signals.'],
+    ]),
   },
   {
+    category: 'Money & risk',
     label: 'Money/risk decision',
     question: 'Should I take this financial risk right now?',
     agentIds: ['mentor', 'buddy', 'failed', 'parents'],
-    answers: [
-      'Upside without destroying stability.',
-      'Overconfidence, debt, or a hidden downside.',
-      'Emergency fund covers around 4 months.',
-      'My family and future obligations.',
-      'The opportunity window may close this month.',
-      'I have checked basic numbers but not worst-case scenarios.',
-      'Downside is capped and upside is meaningful.',
-      'Loss would force bad decisions or debt.',
-      'Security and optionality.',
-      'Keep an emergency reserve untouched.',
-    ],
+    context: contextFromPairs([
+      ['What upside are you trying to capture?', 'Upside without destroying stability.'],
+      ['What is the realistic worst-case loss?', 'Overconfidence, debt, or a hidden downside.'],
+      ['How much emergency runway stays untouched?', 'Emergency fund covers around 4 months.'],
+      ['Who else carries consequences if this goes badly?', 'My family and future obligations.'],
+      ['What timing pressure makes this feel urgent?', 'The opportunity window may close this month.'],
+      ['What numbers have you already checked?', 'I have checked basic numbers but not worst-case scenarios.'],
+      ['What evidence would make the risk worth taking?', 'Downside is capped and upside is meaningful.'],
+      ['What evidence would make this an obvious no?', 'Loss would force bad decisions or debt.'],
+      ['What value should the council protect?', 'Security and optionality.'],
+      ['What hard limit should the council enforce?', 'Keep an emergency reserve untouched.'],
+    ]),
   },
   {
+    category: 'Creative project',
     label: 'Creative project',
     question: 'Should I commit seriously to this creative project?',
     agentIds: ['mentor', 'buddy', 'eighteen', 'failed', 'millionaire'],
-    answers: [
-      'Make something original and finish it.',
-      'Spending months polishing something nobody sees.',
-      'I can fund a small version myself.',
-      'My collaborators, audience, and future portfolio.',
-      'I want a finished version within 8 weeks.',
-      'I have sketches, notes, or a partial prototype.',
-      'A small audience reacts strongly and asks for more.',
-      'I avoid shipping or cannot explain why it matters.',
-      'Taste, courage, and completion.',
-      'Scope must stay small enough to finish.',
-    ],
+    context: contextFromPairs([
+      ['What finished thing do you want to exist?', 'Make something original and finish it.'],
+      ['What are you afraid you will use as an excuse?', 'Spending months polishing something nobody sees.'],
+      ['What budget, tools, or time do you actually have?', 'I can fund a small version myself.'],
+      ['Who is the intended audience or collaborator?', 'My collaborators, audience, and future portfolio.'],
+      ['What shipping deadline would make this real?', 'I want a finished version within 8 weeks.'],
+      ['What have you already made or tested?', 'I have sketches, notes, or a partial prototype.'],
+      ['What evidence would make commitment a clear yes?', 'A small audience reacts strongly and asks for more.'],
+      ['What evidence would mean you are avoiding the real work?', 'I avoid shipping or cannot explain why it matters.'],
+      ['What value should the council protect?', 'Taste, courage, and completion.'],
+      ['What constraint keeps the scope finishable?', 'Scope must stay small enough to finish.'],
+    ]),
   },
 ]
+
+const getPresetByCategory = (presetCategory: PresetCategory) =>
+  councilPresets.find((preset) => preset.category === presetCategory) ?? councilPresets[0]
+
+const inferCategoryFromQuestion = (decisionQuestion: string): PresetCategory => {
+  const text = decisionQuestion.toLowerCase()
+
+  if (/\b(job|career|role|offer|manager|promotion|company|salary|work)\b/.test(text)) {
+    return 'Career move'
+  }
+
+  if (/\b(relationship|partner|dating|marry|break up|breakup|love)\b/.test(text)) {
+    return 'Relationship'
+  }
+
+  if (/\b(money|invest|investment|debt|risk|runway|buy|sell|loan|financial)\b/.test(text)) {
+    return 'Money & risk'
+  }
+
+  if (/\b(creative|project|art|music|film|book|write|design|content)\b/.test(text)) {
+    return 'Creative project'
+  }
+
+  return 'Startup'
+}
+
+const mergeStoredContext = (
+  storedContext: UserContextAnswer[] | undefined,
+  presetCategory: PresetCategory,
+) =>
+  getPresetByCategory(presetCategory).context.map((presetAnswer, index) => {
+    const savedAnswer = storedContext?.find(
+      (item) => item.question === presetAnswer.question,
+    )
+    const migratedAnswer = storedContext?.[index]
+
+    return {
+      ...presetAnswer,
+      answer: savedAnswer?.answer ?? migratedAnswer?.answer ?? '',
+    }
+  })
 
 type AgentMeta = { bg: string, letter: string, image?: string }
 
@@ -256,6 +286,8 @@ const renderAvatar = (meta: AgentMeta, name?: string) =>
     : meta.letter
 
 function App() {
+  const initialCategory =
+    storedState.category ?? inferCategoryFromQuestion(storedState.question ?? defaultQuestion)
   const [question, setQuestion] = useState(
     storedState.question ?? defaultQuestion,
   )
@@ -269,7 +301,7 @@ function App() {
   const [wildcardTone, setWildcardTone] = useState('')
   const [wildcardProtects, setWildcardProtects] = useState('')
   const [userContext, setUserContext] = useState<UserContextAnswer[]>(
-    mergeStoredContext(storedState.userContext),
+    mergeStoredContext(storedState.userContext, initialCategory),
   )
   const [sessionStarted, setSessionStarted] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
@@ -292,8 +324,10 @@ function App() {
   const [screen, setScreen] = useState<'input' | 'assembly' | 'deliberating' | 'verdict'>(
     'input',
   )
-  const [category, setCategory] = useState('Startup')
+  const [category, setCategory] = useState<PresetCategory>(initialCategory)
   const [debateViewMode, setDebateViewMode] = useState<'threaded' | 'roundtable'>('threaded')
+  const questionCount = userContext.length
+  const isReviewStep = currentStep >= questionCount
 
   const averageAgreement = useMemo(() => {
     if (!councilResult.alignment || councilResult.alignment.length === 0) {
@@ -344,7 +378,7 @@ function App() {
               const transcription = await transcribeAudio(
                 base64data,
                 'audio/webm',
-                interviewQuestions[index]
+                userContext[index]?.question ?? 'Context question'
               )
               if (transcription) {
                 updateContextAnswer(index, transcription)
@@ -402,6 +436,7 @@ function App() {
 
   useEffect(() => {
     const nextStoredState: StoredCouncilState = {
+      category,
       councilResult: stripCouncilAudio(councilResult),
       customAgents,
       question,
@@ -410,7 +445,11 @@ function App() {
     }
 
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextStoredState))
-  }, [councilResult, customAgents, question, selectedAgentIds, userContext])
+  }, [category, councilResult, customAgents, question, selectedAgentIds, userContext])
+
+  useEffect(() => {
+    setCurrentStep((step) => Math.min(step, questionCount))
+  }, [questionCount])
 
   const toggleAgent = (agentId: string) => {
     setSelectedAgentIds((currentIds) => {
@@ -452,14 +491,11 @@ function App() {
   const applyPreset = (preset: CouncilPreset) => {
     const customAgentIds = customAgents.map((agent) => agent.id)
 
+    setCategory(preset.category)
     setQuestion(preset.question)
-    setUserContext(
-      defaultUserContext.map((item, index) => ({
-        ...item,
-        answer: preset.answers[index] ?? '',
-      })),
-    )
+    setUserContext(preset.context)
     setSelectedAgentIds([...preset.agentIds, ...customAgentIds])
+    setCurrentStep(0)
     setSessionStarted(false)
     setVisibleBeatCount(fallbackCouncilResult.beats.length)
     setCouncilResult(fallbackCouncilResult)
@@ -677,25 +713,21 @@ function App() {
                 rows={3}
               />
               <div className="category-pills-row" aria-label="Preset categories">
-                {['Startup', 'Career move', 'Relationship', 'Money & risk', 'Creative project'].map((cat) => (
+                {councilPresets.map((preset) => (
                   <button
-                    key={cat}
-                    className={`category-pill ${category === cat ? 'active' : ''}`}
+                    key={preset.category}
+                    className={`category-pill ${category === preset.category ? 'active' : ''}`}
                     onClick={() => {
-                      setCategory(cat)
-                      const preset = councilPresets.find(p => p.label.toLowerCase() === cat.toLowerCase())
-                      if (preset) {
-                        applyPreset(preset)
-                      }
+                      applyPreset(preset)
                     }}
                     type="button"
                   >
-                    {cat}
+                    {preset.category}
                   </button>
                 ))}
               </div>
               <div className="card-footer-row">
-                <span className="card-footer-info">6 voices · ~2 min · 3 rounds</span>
+                <span className="card-footer-info">{selectedAgents.length} voices · ~2 min · 3 rounds</span>
                 <button 
                   className="btn-convene" 
                   disabled={!question.trim()} 
@@ -837,25 +869,25 @@ function App() {
                   <button
                     type="button"
                     className="btn-text-only"
-                    onClick={() => setCurrentStep(currentStep === 10 ? 0 : 10)}
+                    onClick={() => setCurrentStep(isReviewStep ? 0 : questionCount)}
                   >
-                    {currentStep === 10 ? 'Go to Step 1' : 'Review Answers'}
+                    {isReviewStep ? 'Go to Step 1' : 'Review Answers'}
                   </button>
                 </div>
               </div>
 
-              {currentStep < 10 ? (
+              {!isReviewStep ? (
                 <div className="wizard-container">
                   <div className="wizard-progress-bar">
                     <div 
                       className="wizard-progress-fill" 
-                      style={{ width: `${((currentStep + 1) / 10) * 100}%` }}
+                      style={{ width: `${((currentStep + 1) / questionCount) * 100}%` }}
                     />
                   </div>
 
                   <div className="wizard-step-card">
-                    <span className="wizard-step-indicator">Question {currentStep + 1} of 10</span>
-                    <h3 className="wizard-question-text">{interviewQuestions[currentStep]}</h3>
+                    <span className="wizard-step-indicator">Question {currentStep + 1} of {questionCount}</span>
+                    <h3 className="wizard-question-text">{userContext[currentStep]?.question}</h3>
                     
                     <div className="wizard-input-container">
                       <input
@@ -904,7 +936,7 @@ function App() {
                         type="button"
                         onClick={() => {
                           updateContextAnswer(currentStep, '')
-                          setCurrentStep(Math.min(10, currentStep + 1))
+                          setCurrentStep(Math.min(questionCount, currentStep + 1))
                         }}
                         className="btn-secondary btn-skip"
                       >
@@ -912,10 +944,10 @@ function App() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setCurrentStep(currentStep + 1)}
+                        onClick={() => setCurrentStep(Math.min(questionCount, currentStep + 1))}
                         className="btn-primary"
                       >
-                        {currentStep === 9 ? 'Review Answers' : 'Next'}
+                        {currentStep === questionCount - 1 ? 'Review Answers' : 'Next'}
                         <ChevronRight size={16} aria-hidden="true" />
                       </button>
                     </div>
