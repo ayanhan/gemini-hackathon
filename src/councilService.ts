@@ -21,9 +21,16 @@ export type Verdict = {
   firstMove: string
 }
 
+export type AgentAlignment = {
+  agent: string
+  agreement: number
+  keyConcerns: string
+}
+
 export type CouncilResult = {
   beats: DebateBeat[]
   verdict: Verdict
+  alignment?: AgentAlignment[]
   source: 'adk' | 'gemini' | 'fallback'
 }
 
@@ -62,6 +69,14 @@ const fallbackResult: Omit<CouncilResult, 'source'> = {
     firstMove:
       'Write one paid offer tonight and send it to five real potential customers tomorrow.',
   },
+  alignment: [
+    { agent: 'Mentor', agreement: 80, keyConcerns: 'Small reversible steps first' },
+    { agent: 'Sarcastic buddy', agreement: 40, keyConcerns: 'Wait for actual paying customers' },
+    { agent: '18-year-old you', agreement: 95, keyConcerns: 'Pushes for raw courage over comfort' },
+    { agent: 'Failed future you', agreement: 50, keyConcerns: 'Warns about poor financial preparation' },
+    { agent: 'Millionaire you', agreement: 90, keyConcerns: 'Wants to optimize learning rate and leverage' },
+    { agent: 'Scared parents', agreement: 35, keyConcerns: 'Worries about losing healthcare and stability' }
+  ]
 }
 
 const buildUserContext = (userContext: UserContextAnswer[]) => {
@@ -113,7 +128,14 @@ Use this exact shape:
     "decision": "clear unified decision, max 18 words",
     "conditions": "what must be true first, max 28 words",
     "firstMove": "one concrete action within 24 hours, max 24 words"
-  }
+  },
+  "alignment": [
+    {
+      "agent": "agent name",
+      "agreement": 85,
+      "keyConcerns": "short primary concern or stance reasoning, max 12 words"
+    }
+  ]
 }
 
 Rules:
@@ -122,7 +144,8 @@ Rules:
 - Speakers must come from the selected agents, except the final beat can be "Council chair".
 - Let the agents disagree and react to each other.
 - Keep the tone funny, direct, and useful.
-- The verdict must match the user's actual decision, not generic advice.`
+- The verdict must match the user's actual decision, not generic advice.
+- Calculate an alignment rating (agreement: 0-100) and a short key concern summary for every selected agent in the council.`
 }
 
 const buildCouncilPayload = (
@@ -162,6 +185,14 @@ const parseCouncilResult = (text: string): Omit<CouncilResult, 'source'> => {
     throw new Error('Gemini response did not include a complete verdict.')
   }
 
+  const alignment = Array.isArray(parsed.alignment)
+    ? parsed.alignment.map((align) => ({
+        agent: String(align.agent),
+        agreement: typeof align.agreement === 'number' ? align.agreement : parseInt(String(align.agreement)) || 50,
+        keyConcerns: String(align.keyConcerns),
+      }))
+    : undefined
+
   return {
     beats: parsed.beats.map((beat) => ({
       label: String(beat.label),
@@ -173,6 +204,7 @@ const parseCouncilResult = (text: string): Omit<CouncilResult, 'source'> => {
       conditions: String(parsed.verdict.conditions),
       firstMove: String(parsed.verdict.firstMove),
     },
+    alignment,
   }
 }
 
@@ -257,6 +289,38 @@ const runCouncilWithAdk = async (
     ...parseCouncilResult(text),
     source: 'adk',
   }
+}
+
+export const transcribeAudio = async (
+  base64Audio: string,
+  mimeType: string,
+  questionText: string,
+): Promise<string> => {
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY
+  if (!apiKey) {
+    throw new Error('Gemini API Key is not configured. Please supply it via VITE_GEMINI_API_KEY.')
+  }
+
+  const ai = new GoogleGenAI({ apiKey })
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.5-flash',
+    contents: [
+      {
+        text: `You are an accurate speech-to-text transcribing helper.
+The user is answering the context question: "${questionText}".
+Please transcribe the user's spoken answer from the audio file.
+Return ONLY the raw transcription text. Do not add any greeting, explanation, quotes, or conversational remarks. If the audio contains only silence or static, return an empty string.`,
+      },
+      {
+        inlineData: {
+          mimeType,
+          data: base64Audio,
+        },
+      },
+    ],
+  })
+
+  return response.text?.trim() ?? ''
 }
 
 export const runCouncil = async (

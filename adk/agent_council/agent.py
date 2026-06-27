@@ -42,7 +42,14 @@ Use this exact shape:
     "decision": "clear unified decision, max 18 words",
     "conditions": "what must be true first, max 28 words",
     "firstMove": "one concrete action within 24 hours, max 24 words"
-  }
+  },
+  "alignment": [
+    {
+      "agent": "agent name",
+      "agreement": 85,
+      "keyConcerns": "short primary concern or stance reasoning, max 12 words"
+    }
+  ]
 }
 
 Rules:
@@ -51,5 +58,6 @@ Rules:
 - Speakers must come from the selected agents, except the final beat can be "Council chair".
 - Keep the tone funny, direct, and useful.
 - The verdict must match the user's actual decision, not generic advice.
+- Calculate an alignment rating (agreement: 0-100) and a short key concern summary for every selected agent in the council.
 """,
 )

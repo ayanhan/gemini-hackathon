@@ -3,11 +3,15 @@ import {
   Clock3,
   Loader2,
   Mic2,
+  Mic,
+  MicOff,
+  ChevronLeft,
+  ChevronRight,
   Plus,
   Sparkles,
   UsersRound,
 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import councilHero from './assets/council-hero.png'
 import {
   type CouncilAgent,
@@ -15,6 +19,7 @@ import {
   type UserContextAnswer,
   fallbackCouncilResult,
   runCouncil,
+  transcribeAudio,
 } from './councilService'
 import './App.css'
 
@@ -250,6 +255,80 @@ function App() {
     'Preview uses local fallback until ADK or Gemini is configured.',
   )
 
+  const [currentStep, setCurrentStep] = useState(0)
+  const [recordingIndex, setRecordingIndex] = useState<number | null>(null)
+  const [transcribingIndex, setTranscribingIndex] = useState<number | null>(null)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const audioChunksRef = useRef<Blob[]>([])
+
+  const averageAgreement = useMemo(() => {
+    if (!councilResult.alignment || councilResult.alignment.length === 0) {
+      return null
+    }
+    const sum = councilResult.alignment.reduce((acc, curr) => acc + curr.agreement, 0)
+    return Math.round(sum / councilResult.alignment.length)
+  }, [councilResult])
+
+  const startRecording = async (index: number) => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mediaRecorder = new MediaRecorder(stream)
+      mediaRecorderRef.current = mediaRecorder
+      audioChunksRef.current = []
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data)
+        }
+      }
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+        setTranscribingIndex(index)
+        try {
+          const reader = new FileReader()
+          reader.readAsDataURL(audioBlob)
+          reader.onloadend = async () => {
+            try {
+              const base64data = (reader.result as string).split(',')[1]
+              const transcription = await transcribeAudio(
+                base64data,
+                'audio/webm',
+                interviewQuestions[index]
+              )
+              if (transcription) {
+                updateContextAnswer(index, transcription)
+              }
+            } catch (err) {
+              console.error('Transcription error:', err)
+              alert('Transcription failed: ' + (err instanceof Error ? err.message : 'Unknown error'))
+            } finally {
+              setTranscribingIndex(null)
+            }
+          }
+        } catch (error) {
+          console.error('FileReader error:', error)
+          setTranscribingIndex(null)
+        }
+
+        stream.getTracks().forEach((track) => track.stop())
+      }
+
+      mediaRecorder.start()
+      setRecordingIndex(index)
+    } catch (err) {
+      console.error('Failed to start recording:', err)
+      alert('Could not access microphone. Please check permissions.')
+    }
+  }
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop()
+      setRecordingIndex(null)
+    }
+  }
+
   const allAgents = useMemo(
     () => [...councilAgents, ...customAgents],
     [customAgents],
@@ -478,27 +557,141 @@ function App() {
               <p className="eyebrow">Context interview</p>
               <h2>Answer before the council votes</h2>
             </div>
-            <span className="agent-count">
-              {userContext.filter((item) => item.answer.trim()).length}/10
-            </span>
+            <div className="stepper-header-actions">
+              <button
+                type="button"
+                className="btn-text-only"
+                onClick={() => setCurrentStep(currentStep === 10 ? 0 : 10)}
+                title="Review all questions"
+              >
+                {currentStep === 10 ? 'Go to Step 1' : 'Review Answers'}
+              </button>
+              <span className="agent-count">
+                {userContext.filter((item) => item.answer.trim()).length}/10 Complete
+              </span>
+            </div>
           </div>
 
-          <div className="interview-grid">
-            {userContext.map((item, index) => (
-              <label className="interview-question" key={item.question}>
-                <span>
-                  {index + 1}. {item.question}
-                </span>
-                <input
-                  onChange={(event) =>
-                    updateContextAnswer(index, event.target.value)
-                  }
-                  placeholder="Short answer"
-                  value={item.answer}
+          {currentStep < 10 ? (
+            <div className="wizard-container">
+              <div className="wizard-progress-bar">
+                <div 
+                  className="wizard-progress-fill" 
+                  style={{ width: `${((currentStep + 1) / 10) * 100}%` }}
                 />
-              </label>
-            ))}
-          </div>
+              </div>
+
+              <div className="wizard-step-card">
+                <span className="wizard-step-indicator">Question {currentStep + 1} of 10</span>
+                <h3 className="wizard-question-text">{interviewQuestions[currentStep]}</h3>
+                
+                <div className="wizard-input-container">
+                  <input
+                    onChange={(event) =>
+                      updateContextAnswer(currentStep, event.target.value)
+                    }
+                    placeholder="Type your response or click record to speak..."
+                    value={userContext[currentStep]?.answer || ''}
+                    disabled={transcribingIndex === currentStep}
+                    className="wizard-input"
+                  />
+                  
+                  <div className="wizard-audio-controls">
+                    {transcribingIndex === currentStep ? (
+                      <button type="button" className="btn-recording loading" disabled>
+                        <Loader2 className="spin" size={18} />
+                        Transcribing...
+                      </button>
+                    ) : recordingIndex === currentStep ? (
+                      <button type="button" className="btn-recording pulse" onClick={stopRecording}>
+                        <MicOff size={18} />
+                        Stop Recording
+                      </button>
+                    ) : (
+                      <button type="button" className="btn-mic" onClick={() => startRecording(currentStep)}>
+                        <Mic size={18} />
+                        Record Answer
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="wizard-navigation">
+                <button
+                  type="button"
+                  disabled={currentStep === 0}
+                  onClick={() => setCurrentStep(currentStep - 1)}
+                  className="btn-secondary"
+                >
+                  <ChevronLeft size={16} />
+                  Back
+                </button>
+                <div className="wizard-nav-right">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      updateContextAnswer(currentStep, '')
+                      setCurrentStep(Math.min(10, currentStep + 1))
+                    }}
+                    className="btn-secondary btn-skip"
+                  >
+                    Skip
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep(currentStep + 1)}
+                    className="btn-primary"
+                  >
+                    {currentStep === 9 ? 'Review Answers' : 'Next'}
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="review-container">
+              <div className="review-header">
+                <h3>Review Your Stances</h3>
+                <button 
+                  type="button" 
+                  className="btn-secondary btn-small"
+                  onClick={() => setCurrentStep(0)}
+                >
+                  Back to Step 1
+                </button>
+              </div>
+              <div className="review-grid">
+                {userContext.map((item, index) => (
+                  <div className="review-item" key={item.question}>
+                    <div className="review-item-header">
+                      <span>{index + 1}. {item.question}</span>
+                      <div className="review-mic-wrap">
+                        {transcribingIndex === index ? (
+                          <Loader2 className="spin" size={14} />
+                        ) : recordingIndex === index ? (
+                          <button type="button" className="btn-review-mic recording" onClick={stopRecording} title="Stop recording">
+                            <MicOff size={14} />
+                          </button>
+                        ) : (
+                          <button type="button" className="btn-review-mic" onClick={() => startRecording(index)} title="Record audio">
+                            <Mic size={14} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <input
+                      onChange={(event) =>
+                        updateContextAnswer(index, event.target.value)
+                      }
+                      placeholder="Unanswered (council will infer/ignore)"
+                      value={item.answer}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
 
         <section className="panel agent-panel">
@@ -624,17 +817,61 @@ function App() {
         </section>
 
         <section className="panel verdict-panel">
-          <p className="eyebrow">Council memory</p>
-          <h2>What each voice protects</h2>
+          <p className="eyebrow">Council Consensus</p>
+          <h2>Agent Alignment & Concerns</h2>
+
+          {averageAgreement !== null ? (
+            <div className="consensus-meter-container">
+              <div className="consensus-dial" style={{ 
+                background: `conic-gradient(var(--green) ${averageAgreement}%, var(--line) ${100 - averageAgreement}%)`
+              }}>
+                <div className="consensus-dial-inner">
+                  <span className="consensus-score">{averageAgreement}%</span>
+                  <span className="consensus-label">Agreement</span>
+                </div>
+              </div>
+              <p className="consensus-desc">
+                {averageAgreement >= 75 
+                  ? "Strong direction. The council largely supports this course of action." 
+                  : averageAgreement >= 50 
+                  ? "Moderate alignment. Significant doubts or conditions remain." 
+                  : "Deep divide. The council recommends serious caution."}
+              </p>
+            </div>
+          ) : (
+            <div className="no-consensus">
+              <p>Run the council to calculate consensus alignment.</p>
+            </div>
+          )}
 
           <div className="stance-list">
-            {selectedAgents.slice(0, 4).map((agent) => (
-              <article key={agent.id}>
-                <h3>{agent.name}</h3>
-                <p>{agent.stance}</p>
-                <blockquote>{agent.line}</blockquote>
-              </article>
-            ))}
+            {councilResult.alignment ? (
+              councilResult.alignment.map((align) => {
+                const agentDetails = allAgents.find(
+                  (a) => a.name.toLowerCase() === align.agent.toLowerCase() ||
+                         a.name.toLowerCase().includes(align.agent.toLowerCase())
+                )
+                const colorClass = align.agreement >= 75 ? 'agree' : align.agreement >= 45 ? 'caution' : 'disagree'
+                return (
+                  <article key={align.agent} className={`stance-card ${colorClass}`}>
+                    <div className="stance-card-header">
+                      <h3>{align.agent}</h3>
+                      <span className="agreement-pill">{align.agreement}%</span>
+                    </div>
+                    <p className="stance-worry"><strong>Key Stance:</strong> {align.keyConcerns}</p>
+                    {agentDetails && <blockquote className="stance-quote">{agentDetails.line}</blockquote>}
+                  </article>
+                )
+              })
+            ) : (
+              selectedAgents.slice(0, 4).map((agent) => (
+                <article key={agent.id}>
+                  <h3>{agent.name}</h3>
+                  <p>{agent.stance}</p>
+                  <blockquote>{agent.line}</blockquote>
+                </article>
+              ))
+            )}
           </div>
         </section>
 
