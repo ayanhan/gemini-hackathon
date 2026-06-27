@@ -1,150 +1,94 @@
-# Agent Council
+# 🏛️ Agent Council
 
-Hackathon base for Gemini Tokyo, 27.06.2026.
+> **Put your hardest decision in front of every version of you.**  
+> A premium, highly structured decision-making framework built for the **Gemini Tokyo Hackathon** (June 27, 2026).
 
-Agent Council lets a user put one hard decision in front of a small group of
-appointed agents: mentor, sarcastic buddy, younger self, future self, scared
-parents, and other useful voices. The app can generate a live council debate
-with Gemini, then reveals the messages one by one and ends with a unified
-verdict. Before the council runs, the app asks 10 short context questions so
-the agents can debate the real situation instead of giving generic advice.
+---
 
-## Run locally
+## 💡 The Core Concept
 
-```bash
-npm install
-npm run dev
-```
+Personal dilemmas and business decisions are rarely simple. We rarely have a single perspective; instead, we have an internal council of opposing voices. 
 
-The frontend works by itself. Without keys or ADK, it uses a local fallback
-debate.
+**Agent Council** lets you put any hard choice (e.g., *"Should I quit my 9-to-5 and build a startup?"*) in front of a selected committee of AI agents representing different archetypal versions of yourself. The agents debate the issue from their assigned viewpoints, disagree with one another, challenge your cognitive biases, and synthesize a concrete, highly actionable verdict.
 
-## Run with Google ADK
+---
 
-ADK is the preferred agent runtime path for the council. For the hackathon, use
-Google Cloud Vertex AI through ADK so the agent runs through Google Cloud instead
-of a browser API key.
+## 🚀 Key Features
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-npm run adk:install
-```
+* **Context Interview**: A 10-question pre-session interview covering financial runway, fears, constraints, and timing. This ensures the debate and final verdict are deeply personalized and grounded in your real-world situation.
+* **Choosing the Voices**: Toggle active seats on your council from six predefined perspectives:
+  * **Mentor** (Calm strategy: runway, timing, and small reversible steps)
+  * **Sarcastic Buddy** (Social reality: calls out fantasies and laziness)
+  * **18-Year-Old You** (Raw ambition: pushes for courage before comfort takes over)
+  * **Failed Future You** (Risk memory: warns about sloppy preparation and isolation)
+  * **Millionaire You** (Upside: optimizes for leverage, ownership, and learning)
+  * **Scared Parents** (Care and fear: protects stability and safety)
+* **The Wildcard (Custom Seats)**: Dynamically register custom personas (e.g., *Steve Jobs*, *An Aggressive VC*, *A Hardline Pragmatist*) with custom tones and stances to join the chamber.
+* **Progressive Live Debate**: Watch arguments pop onto the screen sequentially with fluid CSS message animations, simulating a live discussion.
+* **Unified Actionable Verdict**: The council returns a high-impact, three-part decision card:
+  1. **The Decision**: A clear, unified direction (no fence-sitting).
+  2. **The Conditions**: Crucial boundary conditions that must hold true.
+  3. **The First Move**: A concrete action you can execute within the next **24 hours**.
 
-Create `.env` for the ADK server and `.env.local` for Vite:
+---
 
-```bash
-cp .env.example .env
-cp .env.example .env.local
-```
+## 🛠️ Google Technology Stack
 
-Set these values:
+This application utilizes cutting-edge tools from Google's AI ecosystem:
 
-```bash
-# .env, used by ADK
-GOOGLE_GENAI_USE_VERTEXAI=True
-GOOGLE_CLOUD_PROJECT=your-google-cloud-project-id
-GOOGLE_CLOUD_LOCATION=us-central1
+1. **Google Gemini 2.5 Flash (`gemini-2.5-flash`)**
+   * Serves as the primary reasoning and generation engine.
+   * Leverages native JSON Schema matching to ensure valid, parseable debates and structured verdicts.
+2. **Google GenAI JS SDK (`@google/genai`)**
+   * Powering direct, low-latency, client-side model generation when a direct API key is supplied.
+3. **Google Agent Development Kit (ADK)**
+   * Orchestrates complex multi-agent interactions securely.
+   * Handles user session registrations via `/sessions` and streams prompt routing via the `/run` gateway.
 
-# .env.local, used by Vite
-VITE_ADK_API_URL=http://127.0.0.1:8000
-```
+---
 
-Authenticate and enable Vertex AI:
+## 🎨 Premium Retro-Paper UI
 
-```bash
-gcloud auth application-default login
-gcloud config set project your-google-cloud-project-id
-gcloud services enable \
-  aiplatform.googleapis.com \
-  run.googleapis.com \
-  cloudbuild.googleapis.com \
-  artifactregistry.googleapis.com
-```
+Designed with a focus on visual excellence and rich aesthetics:
+* A beautiful digital workspace styled with custom vanilla CSS grid coordinates.
+* Uses custom HSL color variables (`--paper`, `--ink`, `--coral`, `--cyan`, `--green`) to create a warm, tactile retro-paper color palette.
+* Linear grid backdrops and clean dashed guidelines that make the application feel highly interactive and alive.
 
-Run both servers in separate terminals:
+---
 
-```bash
-npm run adk:serve
-npm run dev
-```
+## 🏃‍♂️ Running Locally
 
-`npm run adk:server` still runs the raw ADK CLI server. `npm run adk:serve`
-runs the Cloud Run-compatible FastAPI entrypoint from `adk/main.py`.
+### Prerequisites
 
-## Deploy ADK to Cloud Run
+Make sure you have Node.js installed.
 
-Set the same Google Cloud values in your shell:
+### Setup
 
-```bash
-export GOOGLE_CLOUD_PROJECT=your-google-cloud-project-id
-export GOOGLE_CLOUD_LOCATION=us-central1
-export GOOGLE_GENAI_USE_VERTEXAI=True
-```
+1. Clone the repository and navigate to the project folder:
+   ```bash
+   cd gemini-hackathon
+   ```
+2. Install the dependencies:
+   ```bash
+   npm install
+   ```
+3. Copy `.env.example` to create your local environment file:
+   ```bash
+   cp .env.example .env.local
+   ```
+4. Add your configuration keys to `.env.local`:
+   * **Direct Gemini Mode**:
+     ```bash
+     VITE_GEMINI_API_KEY=your_google_gemini_api_key
+     ```
+   * **ADK Server Mode**:
+     ```bash
+     VITE_ADK_API_URL=your_adk_server_api_url
+     ```
 
-Deploy the ADK backend:
+### Scripts
 
-```bash
-npm run gcp:deploy:adk
-```
-
-If Cloud Run uses the default compute service account, make sure that service
-account can call Vertex AI in your project.
-
-After deploy, Cloud Run prints a service URL. Put that URL in `.env.local`:
-
-```bash
-VITE_ADK_API_URL=https://your-cloud-run-service-url
-```
-
-Then rebuild or redeploy the frontend so it calls the Cloud Run ADK backend.
-
-## Scripts
-
-```bash
-npm run adk:install # install Python ADK dependency
-npm run adk:server  # start ADK API server on port 8000
-npm run adk:serve   # start Cloud Run-compatible ADK FastAPI server
-npm run gcp:deploy:adk # deploy ADK backend to Cloud Run
-npm run dev      # start local dev server
-npm run build    # type-check and build production assets
-npm run lint     # run oxlint
-npm run preview  # preview production build
-```
-
-## Environment
-
-Copy `.env.example` to `.env.local` to connect Gemini.
-
-```bash
-VITE_GEMINI_API_KEY=your_key_here
-VITE_ADK_API_URL=http://127.0.0.1:8000
-GOOGLE_GENAI_USE_VERTEXAI=True
-GOOGLE_CLOUD_PROJECT=your-google-cloud-project-id
-GOOGLE_CLOUD_LOCATION=us-central1
-```
-
-Frontend env values are visible to users in the browser. The preferred path is
-ADK + Google Cloud Vertex AI because the browser only sees `VITE_ADK_API_URL`,
-not the model credentials.
-
-If no key is present, the app uses a local fallback debate so the demo still
-works.
-
-## Agent flow
-
-The council runtime logic lives in `src/councilService.ts`.
-
-1. If `VITE_ADK_API_URL` is set, sends the decision to the ADK agent at
-   `adk/agent_council`.
-2. If ADK is not configured, sends the decision directly to Gemini with
-   `@google/genai`.
-3. Includes the user's 10-question context interview and selected council seats.
-4. Parses the verdict into Decision, Conditions, and First 24-hour move.
-5. The UI animates the returned messages sequentially.
-
-ADK endpoint used by the frontend:
-
-```text
-POST http://127.0.0.1:8000/apps/agent_council/run
-```
+* **`npm run dev`**: Spin up the local development server (Vite).
+* **`npm run build`**: Type-check (TypeScript) and compile optimized production assets.
+* **`npm run lint`**: Analyze code quality using Oxlint (0 warnings, 0 errors).
+* **`npm run preview`**: Run a local server previewing the compiled production assets.
