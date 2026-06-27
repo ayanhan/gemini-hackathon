@@ -265,7 +265,7 @@ function App() {
   const audioChunksRef = useRef<Blob[]>([])
 
   const [screen, setScreen] = useState<'input' | 'assembly' | 'deliberating' | 'verdict'>(
-    storedState.councilResult ? 'verdict' : 'input'
+    'input',
   )
   const [category, setCategory] = useState('Startup')
   const [debateViewMode, setDebateViewMode] = useState<'threaded' | 'roundtable'>('threaded')
