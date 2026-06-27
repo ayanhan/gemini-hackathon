@@ -347,7 +347,7 @@ function App() {
   const [memory, setMemory] = useState(storedProfile.memory ?? '')
 
   const [screen, setScreen] = useState<'profile' | 'input' | 'assembly' | 'deliberating' | 'verdict'>(
-    storedState.councilResult ? 'verdict' : hasProfile ? 'input' : 'profile'
+    hasProfile ? 'input' : 'profile'
   )
   const [category, setCategory] = useState<PresetCategory>(initialCategory)
   const [debateViewMode, setDebateViewMode] = useState<'threaded' | 'roundtable'>('roundtable')
@@ -671,6 +671,11 @@ function App() {
     }
   }, [screen])
 
+  const goHome = () => {
+    const hasProfileNow = Boolean(memory.trim() || aboutYou.trim())
+    setScreen(hasProfileNow ? 'input' : 'profile')
+  }
+
   const startCouncil = async () => {
     const trimmedQuestion = question.trim()
 
@@ -682,6 +687,13 @@ function App() {
     setSessionStarted(true)
     setIsGenerating(true)
     setVisibleBeatCount(0)
+    // Clear any previously generated debate so the old verdict never flashes.
+    setCouncilResult({
+      beats: [],
+      verdict: { decision: '', conditions: '', firstMove: '' },
+      alignment: [],
+      source: 'fallback',
+    })
     setStatusMessage('Council is forming arguments...')
 
     try {
@@ -714,14 +726,20 @@ function App() {
   return (
     <main className="app-shell">
       <header className="main-header" aria-label="Redesigned project header">
-        <div className="header-left">
+        <button
+          className="header-left"
+          type="button"
+          onClick={goHome}
+          aria-label="Go to home"
+          style={{ cursor: 'pointer', background: 'none', border: 'none', padding: 0 }}
+        >
           <div className="header-logo-circle">
             <div className="header-logo-inner">
               <div className="header-logo-dot"></div>
             </div>
           </div>
           <span className="header-brand">venn</span>
-        </div>
+        </button>
         <div className="header-right">
           {screen === 'input' && (
             <>
@@ -754,10 +772,15 @@ function App() {
             </div>
           )}
           {screen === 'verdict' && (
-            <div className="verdict-ready-badge">
-              <div className="verdict-check-icon">✓</div>
-              <span>VERDICT READY</span>
-            </div>
+            <>
+              <button className="header-nav-btn" onClick={goHome} type="button">
+                ← Home
+              </button>
+              <div className="verdict-ready-badge">
+                <div className="verdict-check-icon">✓</div>
+                <span>VERDICT READY</span>
+              </div>
+            </>
           )}
         </div>
       </header>
