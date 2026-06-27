@@ -1,0 +1,142 @@
+.landing {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+}
+
+.landing-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 620px;
+}
+
+/* Brand mark — larger version of the header logo */
+.landing-mark {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: conic-gradient(
+    from -90deg,
+    var(--mentor),
+    var(--millionaire),
+    var(--buddy),
+    var(--eighteen),
+    var(--parents),
+    var(--failed),
+    var(--mentor)
+  );
+  box-shadow: 0 10px 30px rgba(122, 90, 240, 0.18);
+}
+
+.landing-mark-inner {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--panel);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.landing-mark-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--primary-gradient);
+}
+
+.landing-eyebrow {
+  margin-top: 26px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--purple);
+}
+
+.landing-title {
+  margin-top: 18px;
+  font-size: clamp(34px, 6vw, 52px);
+  font-weight: 800;
+  line-height: 1.06;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.landing-accent {
+  background: var(--primary-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.landing-sub {
+  margin-top: 22px;
+  max-width: 520px;
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.landing-cta {
+  margin-top: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--primary-gradient);
+  color: #fff;
+  border: none;
+  border-radius: 13px;
+  padding: 15px 26px;
+  font-family: var(--sans);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 10px 26px rgba(122, 90, 240, 0.28);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.landing-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 34px rgba(122, 90, 240, 0.36);
+}
+
+.landing-cta-arrow {
+  font-size: 18px;
+}
+
+.landing-seats {
+  margin-top: 46px;
+  display: flex;
+  gap: 10px;
+}
+
+.landing-seat {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 0 4px 10px rgba(18, 22, 31, 0.12), 0 0 0 4px var(--paper);
+}
+
+.landing-foot {
+  margin-top: 22px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
