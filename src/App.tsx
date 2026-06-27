@@ -1,18 +1,12 @@
 import {
-  Brain,
-  Clock3,
   Loader2,
-  Mic2,
   Mic,
   MicOff,
   ChevronLeft,
   ChevronRight,
-  Plus,
-  Sparkles,
   UsersRound,
 } from 'lucide-react'
 import { useEffect, useMemo, useState, useRef } from 'react'
-import councilHero from './assets/council-hero.png'
 import {
   type CouncilAgent,
   type CouncilResult,
@@ -228,6 +222,15 @@ const councilPresets: CouncilPreset[] = [
   },
 ]
 
+const agentMeta: Record<string, { bg: string, letter: string }> = {
+  mentor: { bg: '#1F9C8B', letter: 'M' },
+  buddy: { bg: '#C8881C', letter: 'S' },
+  eighteen: { bg: '#E0603C', letter: '18' },
+  failed: { bg: '#5B61C9', letter: 'F' },
+  millionaire: { bg: '#3E9B57', letter: '$' },
+  parents: { bg: '#CE5680', letter: 'P' },
+}
+
 function App() {
   const [question, setQuestion] = useState(
     storedState.question ?? defaultQuestion,
@@ -261,12 +264,34 @@ function App() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
 
+  const [screen, setScreen] = useState<'input' | 'assembly' | 'deliberating' | 'verdict'>(
+    storedState.councilResult ? 'verdict' : 'input'
+  )
+  const [category, setCategory] = useState('Startup')
+  const [debateViewMode, setDebateViewMode] = useState<'threaded' | 'roundtable'>('threaded')
+
   const averageAgreement = useMemo(() => {
     if (!councilResult.alignment || councilResult.alignment.length === 0) {
       return null
     }
     const sum = councilResult.alignment.reduce((acc, curr) => acc + curr.agreement, 0)
     return Math.round(sum / councilResult.alignment.length)
+  }, [councilResult])
+
+  const voteCounts = useMemo(() => {
+    let go = 0, cond = 0, hold = 0
+    if (councilResult.alignment) {
+      councilResult.alignment.forEach((a) => {
+        if (a.agreement >= 75) go++
+        else if (a.agreement >= 45) cond++
+        else hold++
+      })
+    } else {
+      go = 1
+      cond = 3
+      hold = 2
+    }
+    return { go, cond, hold }
   }, [councilResult])
 
   const startRecording = async (index: number) => {
@@ -425,7 +450,7 @@ function App() {
   }
 
   useEffect(() => {
-    if (!sessionStarted || isGenerating) {
+    if (!sessionStarted || isGenerating || screen !== 'deliberating') {
       return
     }
 
@@ -433,13 +458,18 @@ function App() {
     const timers = councilResult.beats.map((_, index) =>
       window.setTimeout(() => {
         setVisibleBeatCount(index + 1)
-      }, 420 * (index + 1)),
+      }, 3000 * (index + 1))
     )
+
+    const finalTimer = window.setTimeout(() => {
+      setScreen('verdict')
+    }, 3000 * (councilResult.beats.length + 1))
 
     return () => {
       timers.forEach(window.clearTimeout)
+      window.clearTimeout(finalTimer)
     }
-  }, [councilResult, isGenerating, sessionStarted])
+  }, [councilResult, isGenerating, sessionStarted, screen])
 
   const startCouncil = async () => {
     const trimmedQuestion = question.trim()
@@ -448,6 +478,7 @@ function App() {
       return
     }
 
+    setScreen('deliberating')
     setSessionStarted(true)
     setIsGenerating(true)
     setVisibleBeatCount(0)
@@ -481,421 +512,791 @@ function App() {
 
   return (
     <main className="app-shell">
-      <header className="topbar" aria-label="Project header">
-        <a href="https://luma.com/geminitokyo" rel="noreferrer" target="_blank">
-          Gemini Tokyo
-        </a>
-        <span>27.06.2026</span>
-        <a
-          href="http://tinyurl.com/geminisubmit"
-          rel="noreferrer"
-          target="_blank"
-        >
-          Submission
-        </a>
+      <header className="main-header" aria-label="Redesigned project header">
+        <div className="header-left">
+          <div className="header-logo-circle">
+            <div className="header-logo-inner">
+              <div className="header-logo-dot"></div>
+            </div>
+          </div>
+          <span className="header-brand">Agent Council</span>
+        </div>
+        <div className="header-right">
+          {screen === 'input' && (
+            <>
+              <button className="header-nav-btn active" type="button">New council</button>
+              <button 
+                className="header-nav-btn" 
+                onClick={() => storedState.councilResult && setScreen('verdict')}
+                type="button"
+              >
+                History
+              </button>
+            </>
+          )}
+          {screen === 'assembly' && (
+            <button className="header-nav-btn" onClick={() => setScreen('input')} type="button">
+              ← Back to input
+            </button>
+          )}
+          {screen === 'deliberating' && (
+            <div className="live-council-badge">
+              <div className="live-pulse-dot"></div>
+              <span>LIVE COUNCIL</span>
+            </div>
+          )}
+          {screen === 'verdict' && (
+            <div className="verdict-ready-badge">
+              <div className="verdict-check-icon">✓</div>
+              <span>VERDICT READY</span>
+            </div>
+          )}
+        </div>
       </header>
 
-      <section className="hero-section">
-        <div className="hero-copy">
-          <p className="eyebrow">Agent Council</p>
-          <h1>Put your hardest decision in front of every version of you.</h1>
-          <p className="hero-text">
-            A fast council room where appointed agents debate a dilemma,
-            challenge each other, and return a practical verdict before the
-            timer runs out.
-          </p>
+      {/* Screen 1: Input Page */}
+      {screen === 'input' && (
+        <section className="screen-input-layout" aria-label="Input screen">
+          <div className="input-hero-copy">
+            <span className="mono-label">The decision chamber</span>
+            <h1 className="hero-title">
+              Put your hardest decision in front of <span className="gradient-text">every version of you.</span>
+            </h1>
+            <p className="hero-description">
+              Convene a council of your inner voices. They debate from opposing viewpoints, challenge your blind spots, and return one practical verdict — in about two minutes.
+            </p>
 
-          <div className="question-panel" aria-label="Council question">
-            <label htmlFor="question">Decision to debate</label>
-            <textarea
-              id="question"
-              value={question}
-              onChange={(event) => setQuestion(event.target.value)}
-              rows={4}
-            />
-            <div className="preset-row" aria-label="Council presets">
-              {councilPresets.map((preset) => (
-                <button
-                  key={preset.label}
+            <div className="input-card-panel" aria-label="Decision input card">
+              <div className="card-header-row">
+                <span className="card-heading">What are you deciding?</span>
+                <span className="card-char-count">{question.length} / 240</span>
+              </div>
+              <textarea
+                className="decision-textarea"
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                placeholder="Should I quit my 9-to-5 and build a startup?"
+                maxLength={240}
+                rows={3}
+              />
+              <div className="category-pills-row" aria-label="Preset categories">
+                {['Startup', 'Career move', 'Relationship', 'Money & risk', 'Creative project'].map((cat) => (
+                  <button
+                    key={cat}
+                    className={`category-pill ${category === cat ? 'active' : ''}`}
+                    onClick={() => {
+                      setCategory(cat)
+                      const preset = councilPresets.find(p => p.label.toLowerCase() === cat.toLowerCase())
+                      if (preset) {
+                        applyPreset(preset)
+                      }
+                    }}
+                    type="button"
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+              <div className="card-footer-row">
+                <span className="card-footer-info">6 voices · ~2 min · 3 rounds</span>
+                <button 
+                  className="btn-convene" 
+                  disabled={!question.trim()} 
+                  onClick={() => setScreen('assembly')}
                   type="button"
-                  onClick={() => applyPreset(preset)}
                 >
-                  {preset.label}
+                  Convene the council <span className="arrow">→</span>
                 </button>
-              ))}
+              </div>
             </div>
-            <div className="question-actions">
-              <button
-                disabled={isGenerating || !question.trim()}
-                type="button"
-                onClick={startCouncil}
-              >
-                {isGenerating ? (
-                  <Loader2 className="spin" size={18} aria-hidden="true" />
-                ) : (
-                  <Sparkles size={18} aria-hidden="true" />
-                )}
-                {isGenerating ? 'Summoning council' : 'Start council'}
-              </button>
-              <span>
-                <Clock3 size={16} aria-hidden="true" />
-                2 min format
-              </span>
+
+            <div className="input-bottom-row">
+              <span className="privacy-badge">🔒 Private by default — nothing is saved without you</span>
+              <span className="divider-dot"></span>
+              <span className="power-badge">Powered by a multi-agent reasoning model</span>
             </div>
           </div>
-        </div>
 
-        <div className="hero-visual" aria-label="AI council chamber preview">
-          <img src={councilHero} alt="" />
-        </div>
-      </section>
-
-      <section className="workspace-grid" aria-label="Council workspace">
-        <section className="panel interview-panel">
-          <div className="panel-heading">
-            <div>
-              <p className="eyebrow">Context interview</p>
-              <h2>Answer before the council votes</h2>
+          <div className="input-hero-visual" aria-label="AI council chamber orbits preview">
+            <div className="radial-blur-glow"></div>
+            <div className="visual-circle-orbit">
+              <div className="orbit-gradient-ring"></div>
+              <div className="orbit-inner-bg"></div>
+              <div className="orbit-dashed-ring"></div>
+              <div className="orbit-center-call">
+                <div className="center-call-icon">
+                  <div className="center-call-dot"></div>
+                </div>
+                <span className="center-call-label">YOUR CALL</span>
+              </div>
+              <div className="orbit-agent bubble-m">M</div>
+              <div className="orbit-agent bubble-s">S</div>
+              <div className="orbit-agent bubble-18">18</div>
+              <div className="orbit-agent bubble-f">F</div>
+              <div className="orbit-agent bubble-mil">$</div>
+              <div className="orbit-agent bubble-p">P</div>
             </div>
-            <div className="stepper-header-actions">
-              <button
-                type="button"
-                className="btn-text-only"
-                onClick={() => setCurrentStep(currentStep === 10 ? 0 : 10)}
-                title="Review all questions"
-              >
-                {currentStep === 10 ? 'Go to Step 1' : 'Review Answers'}
-              </button>
+            <div className="orbit-labels-panel">
+              <span className="labels-heading">Your council · {selectedAgentIds.length} voices</span>
+              <div className="labels-grid">
+                {allAgents.map((agent) => {
+                  const meta = agentMeta[agent.id] || { bg: '#7A5AF0', letter: agent.name[0] }
+                  const isSelected = selectedAgentIds.includes(agent.id)
+                  return (
+                    <div key={agent.id} className="label-item" style={{ opacity: isSelected ? 1 : 0.4 }}>
+                      <div className="label-color-dot" style={{ backgroundColor: meta.bg }}></div>
+                      <span className="label-name">{agent.name}</span>
+                      <span className="label-seat">{agent.seat}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Screen 2: Assembly & Context Wizard */}
+      {screen === 'assembly' && (
+        <section className="screen-assembly-layout" aria-label="Assembly screen">
+          <div className="assembly-left-panel">
+            <div className="panel-heading">
+              <div>
+                <span className="mono-label">02 · Assembly</span>
+                <h2>Choose the council voices</h2>
+              </div>
               <span className="agent-count">
-                {userContext.filter((item) => item.answer.trim()).length}/10 Complete
+                <UsersRound size={16} aria-hidden="true" />
+                {selectedAgents.length} Seats
               </span>
             </div>
-          </div>
 
-          {currentStep < 10 ? (
-            <div className="wizard-container">
-              <div className="wizard-progress-bar">
-                <div 
-                  className="wizard-progress-fill" 
-                  style={{ width: `${((currentStep + 1) / 10) * 100}%` }}
+            <div className="agent-selection-grid" aria-label="Agent selection grid">
+              {allAgents.map((agent) => {
+                const meta = agentMeta[agent.id] || { bg: '#7A5AF0', letter: agent.name[0] }
+                const isSelected = selectedAgentIds.includes(agent.id)
+                return (
+                  <button
+                    key={agent.id}
+                    className="agent-select-card"
+                    data-selected={isSelected}
+                    onClick={() => toggleAgent(agent.id)}
+                    type="button"
+                  >
+                    <div className="agent-select-avatar" style={{ backgroundColor: meta.bg }}>
+                      {meta.letter}
+                    </div>
+                    <div className="agent-select-info">
+                      <span className="agent-name">{agent.name}</span>
+                      <span className="agent-seat">{agent.seat}</span>
+                      <span className="agent-tone">{agent.tone}</span>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+
+            <div className="wildcard-form" aria-label="Custom agent form">
+              <p className="mono-label">The Wildcard (Custom Seat)</p>
+              <div className="wildcard-inputs-row">
+                <input
+                  value={wildcardName}
+                  onChange={(e) => setWildcardName(e.target.value)}
+                  placeholder="Steve Jobs"
+                  aria-label="Custom agent name"
+                />
+                <input
+                  value={wildcardTone}
+                  onChange={(e) => setWildcardTone(e.target.value)}
+                  placeholder="intense, taste-obsessed"
+                  aria-label="Custom agent tone"
+                />
+                <input
+                  value={wildcardProtects}
+                  onChange={(e) => setWildcardProtects(e.target.value)}
+                  placeholder="taste & brutal simplicity"
+                  aria-label="Custom agent protects value"
                 />
               </div>
-
-              <div className="wizard-step-card">
-                <span className="wizard-step-indicator">Question {currentStep + 1} of 10</span>
-                <h3 className="wizard-question-text">{interviewQuestions[currentStep]}</h3>
-                
-                <div className="wizard-input-container">
-                  <input
-                    onChange={(event) =>
-                      updateContextAnswer(currentStep, event.target.value)
-                    }
-                    placeholder="Type your response or click record to speak..."
-                    value={userContext[currentStep]?.answer || ''}
-                    disabled={transcribingIndex === currentStep}
-                    className="wizard-input"
-                  />
-                  
-                  <div className="wizard-audio-controls">
-                    {transcribingIndex === currentStep ? (
-                      <button type="button" className="btn-recording loading" disabled>
-                        <Loader2 className="spin" size={18} />
-                        Transcribing...
-                      </button>
-                    ) : recordingIndex === currentStep ? (
-                      <button type="button" className="btn-recording pulse" onClick={stopRecording}>
-                        <MicOff size={18} />
-                        Stop Recording
-                      </button>
-                    ) : (
-                      <button type="button" className="btn-mic" onClick={() => startRecording(currentStep)}>
-                        <Mic size={18} />
-                        Record Answer
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="wizard-navigation">
-                <button
-                  type="button"
-                  disabled={currentStep === 0}
-                  onClick={() => setCurrentStep(currentStep - 1)}
-                  className="btn-secondary"
-                >
-                  <ChevronLeft size={16} />
-                  Back
-                </button>
-                <div className="wizard-nav-right">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      updateContextAnswer(currentStep, '')
-                      setCurrentStep(Math.min(10, currentStep + 1))
-                    }}
-                    className="btn-secondary btn-skip"
-                  >
-                    Skip
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCurrentStep(currentStep + 1)}
-                    className="btn-primary"
-                  >
-                    {currentStep === 9 ? 'Review Answers' : 'Next'}
-                    <ChevronRight size={16} />
-                  </button>
-                </div>
-              </div>
+              <button
+                disabled={!wildcardName.trim() || !wildcardTone.trim() || !wildcardProtects.trim()}
+                onClick={addWildcardAgent}
+                className="btn-add-wildcard"
+                type="button"
+              >
+                + Add Custom Seat
+              </button>
             </div>
-          ) : (
-            <div className="review-container">
-              <div className="review-header">
-                <h3>Review Your Stances</h3>
-                <button 
-                  type="button" 
-                  className="btn-secondary btn-small"
-                  onClick={() => setCurrentStep(0)}
-                >
-                  Back to Step 1
-                </button>
+          </div>
+
+          <div className="assembly-right-panel">
+            <div className="stepper-wizard-card" aria-label="Context interview wizard">
+              <div className="panel-heading">
+                <div>
+                  <span className="mono-label">Context interview</span>
+                  <h2>Answer before the council votes</h2>
+                </div>
+                <div className="stepper-header-actions">
+                  <button
+                    type="button"
+                    className="btn-text-only"
+                    onClick={() => setCurrentStep(currentStep === 10 ? 0 : 10)}
+                  >
+                    {currentStep === 10 ? 'Go to Step 1' : 'Review Answers'}
+                  </button>
+                </div>
               </div>
-              <div className="review-grid">
-                {userContext.map((item, index) => (
-                  <div className="review-item" key={item.question}>
-                    <div className="review-item-header">
-                      <span>{index + 1}. {item.question}</span>
-                      <div className="review-mic-wrap">
-                        {transcribingIndex === index ? (
-                          <Loader2 className="spin" size={14} />
-                        ) : recordingIndex === index ? (
-                          <button type="button" className="btn-review-mic recording" onClick={stopRecording} title="Stop recording">
-                            <MicOff size={14} />
+
+              {currentStep < 10 ? (
+                <div className="wizard-container">
+                  <div className="wizard-progress-bar">
+                    <div 
+                      className="wizard-progress-fill" 
+                      style={{ width: `${((currentStep + 1) / 10) * 100}%` }}
+                    />
+                  </div>
+
+                  <div className="wizard-step-card">
+                    <span className="wizard-step-indicator">Question {currentStep + 1} of 10</span>
+                    <h3 className="wizard-question-text">{interviewQuestions[currentStep]}</h3>
+                    
+                    <div className="wizard-input-container">
+                      <input
+                        onChange={(event) =>
+                          updateContextAnswer(currentStep, event.target.value)
+                        }
+                        placeholder="Type response or click record..."
+                        value={userContext[currentStep]?.answer || ''}
+                        disabled={transcribingIndex === currentStep}
+                        className="wizard-input"
+                      />
+                      
+                      <div className="wizard-audio-controls">
+                        {transcribingIndex === currentStep ? (
+                          <button type="button" className="btn-recording loading" disabled>
+                            <Loader2 className="spin" size={18} aria-hidden="true" />
+                            Transcribing...
+                          </button>
+                        ) : recordingIndex === currentStep ? (
+                          <button type="button" className="btn-recording pulse" onClick={stopRecording}>
+                            <MicOff size={18} aria-hidden="true" />
+                            Stop Recording
                           </button>
                         ) : (
-                          <button type="button" className="btn-review-mic" onClick={() => startRecording(index)} title="Record audio">
-                            <Mic size={14} />
+                          <button type="button" className="btn-mic" onClick={() => startRecording(currentStep)}>
+                            <Mic size={18} aria-hidden="true" />
+                            Record Answer
                           </button>
                         )}
                       </div>
                     </div>
-                    <input
-                      onChange={(event) =>
-                        updateContextAnswer(index, event.target.value)
-                      }
-                      placeholder="Unanswered (council will infer/ignore)"
-                      value={item.answer}
-                    />
                   </div>
-                ))}
-              </div>
+
+                  <div className="wizard-navigation">
+                    <button
+                      type="button"
+                      disabled={currentStep === 0}
+                      onClick={() => setCurrentStep(currentStep - 1)}
+                      className="btn-secondary"
+                    >
+                      <ChevronLeft size={16} aria-hidden="true" />
+                      Back
+                    </button>
+                    <div className="wizard-nav-right">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          updateContextAnswer(currentStep, '')
+                          setCurrentStep(Math.min(10, currentStep + 1))
+                        }}
+                        className="btn-secondary btn-skip"
+                      >
+                        Skip
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCurrentStep(currentStep + 1)}
+                        className="btn-primary"
+                      >
+                        {currentStep === 9 ? 'Review Answers' : 'Next'}
+                        <ChevronRight size={16} aria-hidden="true" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="review-container">
+                  <div className="review-grid">
+                    {userContext.map((item, index) => (
+                      <div className="review-item" key={item.question}>
+                        <div className="review-item-header">
+                          <span>{index + 1}. {item.question}</span>
+                          <div className="review-mic-wrap">
+                            {transcribingIndex === index ? (
+                              <Loader2 className="spin" size={14} aria-hidden="true" />
+                            ) : recordingIndex === index ? (
+                              <button type="button" className="btn-review-mic recording" onClick={stopRecording} title="Stop recording">
+                                <MicOff size={14} aria-hidden="true" />
+                              </button>
+                            ) : (
+                              <button type="button" className="btn-review-mic" onClick={() => startRecording(index)} title="Record audio">
+                                <Mic size={14} aria-hidden="true" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        <input
+                          onChange={(event) =>
+                            updateContextAnswer(index, event.target.value)
+                          }
+                          placeholder="Unanswered (infer/ignore)"
+                          value={item.answer}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="assembly-action-row">
+                    <button 
+                      className="btn-start-debate" 
+                      disabled={isGenerating} 
+                      onClick={startCouncil}
+                      type="button"
+                    >
+                      {isGenerating ? 'Summoning Council...' : 'Start Council Debate →'}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </section>
+      )}
 
-        <section className="panel agent-panel">
-          <div className="panel-heading">
-            <div>
-              <p className="eyebrow">Council seats</p>
-              <h2>Choose the voices</h2>
+      {/* Screen 3: Deliberation - Live Debate */}
+      {screen === 'deliberating' && (
+        <section className="screen-deliberation-layout" aria-label="Deliberation screen">
+          <div className="deliberation-subheader">
+            <div className="subheader-left">
+              <span className="mono-label">On the table</span>
+              <h2>{question}</h2>
             </div>
-            <span className="agent-count">
-              <UsersRound size={16} aria-hidden="true" />
-              {selectedAgents.length}
-            </span>
+            <div className="subheader-right">
+              <div className="progress-bars-group">
+                <div className={`bar-step ${visibleBeatCount >= 1 ? 'active' : ''}`}></div>
+                <div className={`bar-step ${visibleBeatCount >= 2 ? 'active' : ''}`}></div>
+                <div className={`bar-step ${visibleBeatCount >= 3 ? 'active' : ''}`}></div>
+              </div>
+              <span className="round-indicator">
+                Round {Math.min(3, Math.max(1, Math.ceil(visibleBeatCount / 1.5)))} / 3 · {isGenerating ? 'Summoning...' : `00:${(30 - (visibleBeatCount * 6)).toString().padStart(2, '0')}`}
+              </span>
+              <button className="btn-skip-verdict" onClick={() => setScreen('verdict')} type="button">
+                Skip to verdict →
+              </button>
+            </div>
           </div>
 
-          <div className="agent-list">
-            {allAgents.map((agent) => {
-              const isSelected = selectedAgentIds.includes(agent.id)
-
-              return (
-                <button
-                  className="agent-card"
-                  data-selected={isSelected}
-                  key={agent.id}
-                  onClick={() => toggleAgent(agent.id)}
-                  type="button"
-                >
-                  <span className="agent-name">{agent.name}</span>
-                  <span className="agent-seat">{agent.seat}</span>
-                  <span className="agent-tone">{agent.tone}</span>
-                </button>
-              )
-            })}
-          </div>
-
-          <div className="wildcard-form" aria-label="Add custom council seat">
-            <p className="eyebrow">The Wildcard</p>
-            <label htmlFor="wildcard-name">Agent name</label>
-            <input
-              id="wildcard-name"
-              onChange={(event) => setWildcardName(event.target.value)}
-              placeholder="Steve Jobs"
-              value={wildcardName}
-            />
-
-            <label htmlFor="wildcard-tone">Tone</label>
-            <input
-              id="wildcard-tone"
-              onChange={(event) => setWildcardTone(event.target.value)}
-              placeholder="intense, product-obsessed"
-              value={wildcardTone}
-            />
-
-            <label htmlFor="wildcard-protects">What they protect</label>
-            <input
-              id="wildcard-protects"
-              onChange={(event) => setWildcardProtects(event.target.value)}
-              placeholder="focus, taste, brutal simplicity"
-              value={wildcardProtects}
-            />
-
-            <button
-              disabled={
-                !wildcardName.trim() ||
-                !wildcardTone.trim() ||
-                !wildcardProtects.trim()
-              }
-              onClick={addWildcardAgent}
+          <div className="deliberation-mode-toggle">
+            <button 
+              className={`mode-btn ${debateViewMode === 'threaded' ? 'active' : ''}`}
+              onClick={() => setDebateViewMode('threaded')}
               type="button"
             >
-              <Plus size={16} aria-hidden="true" />
-              Add seat
+              Threaded Debate
+            </button>
+            <button 
+              className={`mode-btn ${debateViewMode === 'roundtable' ? 'active' : ''}`}
+              onClick={() => setDebateViewMode('roundtable')}
+              type="button"
+            >
+              Round Table
             </button>
           </div>
-        </section>
 
-        <section className="panel debate-panel">
-          <div className="panel-heading">
-            <div>
-              <p className="eyebrow">Live debate</p>
-              <h2>
-                {isGenerating
-                  ? 'Council is thinking'
-                  : sessionStarted
-                    ? 'Council in session'
-                    : 'Preview mode'}
-              </h2>
-            </div>
-            <span className="voice-pill">
-              <Mic2 size={16} aria-hidden="true" />
-              {councilResult.source === 'adk'
-                ? 'adk-agent'
-                : councilResult.source === 'gemini'
-                  ? 'gemini-live'
-                  : 'fallback'}
-            </span>
-          </div>
-
-          <div className="topic-strip">
-            <Brain size={18} aria-hidden="true" />
-            <p>{question}</p>
-          </div>
-
-          <p className="status-line" aria-live="polite">
-            {statusMessage}
-          </p>
-
-          <ol className="debate-list">
-            {councilResult.beats.slice(0, visibleBeatCount).map((beat) => (
-              <li className="message-pop" key={`${beat.label}-${beat.speaker}`}>
-                <span>{beat.label}</span>
-                <strong>{beat.speaker}</strong>
-                <p>{beat.text}</p>
-              </li>
-            ))}
-            {isGenerating ? (
-              <li className="thinking-message">
-                <span>Listening</span>
-                <strong>Council room</strong>
-                <p>Agents are preparing arguments from their assigned seats.</p>
-              </li>
-            ) : null}
-          </ol>
-        </section>
-
-        <section className="panel verdict-panel">
-          <p className="eyebrow">Council Consensus</p>
-          <h2>Agent Alignment & Concerns</h2>
-
-          {averageAgreement !== null ? (
-            <div className="consensus-meter-container">
-              <div className="consensus-dial" style={{ 
-                background: `conic-gradient(var(--green) ${averageAgreement}%, var(--line) ${100 - averageAgreement}%)`
-              }}>
-                <div className="consensus-dial-inner">
-                  <span className="consensus-score">{averageAgreement}%</span>
-                  <span className="consensus-label">Agreement</span>
+          {debateViewMode === 'threaded' ? (
+            <div className="deliberation-threaded-grid" aria-label="Threaded debate board">
+              {/* Column 1: Voices Status */}
+              <div className="voices-status-col">
+                <span className="mono-label">The table · {selectedAgents.length} voices</span>
+                <div className="voices-status-list">
+                  {selectedAgents.map((agent) => {
+                    const meta = agentMeta[agent.id] || { bg: '#7A5AF0', letter: agent.name[0] }
+                    const activeBeat = visibleBeatCount > 0 ? councilResult.beats[visibleBeatCount - 1] : null
+                    const isSpeaking = activeBeat?.speaker.toLowerCase() === agent.name.toLowerCase() ||
+                                       activeBeat?.speaker.toLowerCase().includes(agent.name.toLowerCase())
+                    const hasSpoken = visibleBeatCount > 0 && 
+                      councilResult.beats.slice(0, visibleBeatCount - 1).some(b => 
+                        b.speaker.toLowerCase() === agent.name.toLowerCase() ||
+                        b.speaker.toLowerCase().includes(agent.name.toLowerCase())
+                      )
+                    
+                    return (
+                      <div key={agent.id} className={`voice-status-item ${isSpeaking ? 'speaking' : ''}`}>
+                        <div className="voice-status-avatar" style={{ backgroundColor: meta.bg }}>
+                          {meta.letter}
+                        </div>
+                        <div className="voice-status-info">
+                          <span className="voice-name">{agent.name}</span>
+                          <span className="voice-seat">{agent.seat}</span>
+                        </div>
+                        {isSpeaking ? (
+                          <div className="speaking-audio-wave" aria-label="speaking animations">
+                            <div className="wave-bar"></div>
+                            <div className="wave-bar"></div>
+                            <div className="wave-bar"></div>
+                          </div>
+                        ) : hasSpoken ? (
+                          <span className="voice-status-badge spoke">SPOKE</span>
+                        ) : (
+                          <span className="voice-status-badge next">NEXT</span>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+                
+                <div className="tension-card">
+                  <div className="tension-header">
+                    <span className="mono-label">Disagreement</span>
+                    <span className="tension-badge">High</span>
+                  </div>
+                  <div className="tension-progress-bar">
+                    <div className="tension-progress-fill" style={{ width: '78%' }}></div>
+                  </div>
+                  <p className="tension-desc">Strong tension is good — it means the bet is being stress-tested from both sides.</p>
                 </div>
               </div>
-              <p className="consensus-desc">
-                {averageAgreement >= 75 
-                  ? "Strong direction. The council largely supports this course of action." 
-                  : averageAgreement >= 50 
-                  ? "Moderate alignment. Significant doubts or conditions remain." 
-                  : "Deep divide. The council recommends serious caution."}
-              </p>
+
+              {/* Column 2: Debate Bubble chain */}
+              <div className="debate-bubbles-col">
+                {councilResult.beats.slice(0, visibleBeatCount).map((beat, index) => {
+                  const agentDetails = allAgents.find(
+                    (a) => a.name.toLowerCase() === beat.speaker.toLowerCase() ||
+                          a.name.toLowerCase().includes(beat.speaker.toLowerCase())
+                  )
+                  const meta = agentDetails ? agentMeta[agentDetails.id] : { bg: '#7A5AF0', letter: beat.speaker[0] }
+                  
+                  return (
+                    <div key={index} className="debate-bubble-wrap message-pop">
+                      <div className="debate-bubble-avatar" style={{ backgroundColor: meta.bg }}>
+                        {meta.letter}
+                      </div>
+                      <div className="debate-bubble-body" style={{ borderLeftColor: meta.bg }}>
+                        <div className="bubble-body-header">
+                          <div className="bubble-header-left">
+                            <span className="bubble-speaker">{beat.speaker}</span>
+                            <span className="bubble-beat-label" style={{ color: meta.bg }}>{beat.label}</span>
+                          </div>
+                          <span className="bubble-time">0:{(index * 15).toString().padStart(2, '0')}</span>
+                        </div>
+                        <p className="bubble-text">{beat.text}</p>
+                      </div>
+                    </div>
+                  )
+                })}
+                {isGenerating && (
+                  <div className="debate-bubble-wrap thinking">
+                    <div className="debate-bubble-avatar" style={{ backgroundColor: 'var(--muted)' }}>
+                      ...
+                    </div>
+                    <div className="debate-bubble-body">
+                      <p className="bubble-text">Listening... Council is preparing stances...</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Column 3: Claims and tension points */}
+              <div className="claims-tension-col">
+                <span className="mono-label">Claims on table</span>
+                <div className="claims-list">
+                  {councilResult.beats.slice(0, visibleBeatCount).map((beat, index) => {
+                    const agentDetails = allAgents.find(a => a.name.toLowerCase() === beat.speaker.toLowerCase() || a.name.toLowerCase().includes(beat.speaker.toLowerCase()))
+                    const meta = agentDetails ? agentMeta[agentDetails.id] : { bg: '#7A5AF0', letter: beat.speaker[0] }
+                    return (
+                      <div key={index} className="claim-item-card message-pop">
+                        <p className="claim-text">"{beat.text.slice(0, 45)}..."</p>
+                        <div className="claim-speaker-row">
+                          <div className="claim-dot" style={{ backgroundColor: meta.bg }}></div>
+                          <span>{beat.speaker}</span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                <span className="mono-label" style={{ marginTop: '1.5rem' }}>Points of tension</span>
+                <div className="tension-points-list">
+                  {visibleBeatCount >= 2 && (
+                    <div className="tension-point-item message-pop">
+                      <span className="tension-point-title">Quit now vs. test first</span>
+                      <div className="tension-point-orbit-bar" aria-label="orbit graphics">
+                        <span className="orbit-name">18-yo</span>
+                        <div className="orbit-dashed-line"></div>
+                        <span className="orbit-name">Mentor</span>
+                      </div>
+                    </div>
+                  )}
+                  {visibleBeatCount >= 4 && (
+                    <div className="tension-point-item message-pop">
+                      <span className="tension-point-title">Savings vs. safety net</span>
+                      <div className="tension-point-orbit-bar" aria-label="orbit graphics">
+                        <span className="orbit-name">Millionaire</span>
+                        <div className="orbit-dashed-line"></div>
+                        <span className="orbit-name">Parents</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           ) : (
-            <div className="no-consensus">
-              <p>Run the council to calculate consensus alignment.</p>
+            /* roundtable alternate view */
+            <div className="deliberation-roundtable-layout" aria-label="Round table debate board">
+              <div className="roundtable-diagram-container">
+                <div className="roundtable-outer-ring"></div>
+                <div className="roundtable-inner-dashed"></div>
+                
+                <div className="roundtable-center-dial">
+                  <div className="center-dial-pulse"></div>
+                  <span className="center-dial-delib">DELIBERATING</span>
+                  <span className="center-dial-time">00:12</span>
+                  <span className="center-dial-round">Round 2 of 3</span>
+                </div>
+
+                {selectedAgents.map((agent, i) => {
+                  const meta = agentMeta[agent.id] || { bg: '#7A5AF0', letter: agent.name[0] }
+                  const angle = (i * 360) / selectedAgents.length
+                  const activeBeat = visibleBeatCount > 0 ? councilResult.beats[visibleBeatCount - 1] : null
+                  const isSpeaking = activeBeat?.speaker.toLowerCase() === agent.name.toLowerCase() ||
+                                     activeBeat?.speaker.toLowerCase().includes(agent.name.toLowerCase())
+                  
+                  return (
+                    <div 
+                      key={agent.id} 
+                      className={`roundtable-node ${isSpeaking ? 'active' : ''}`}
+                      style={{
+                        transform: `rotate(${angle}deg) translate(180px) rotate(-${angle}deg)`,
+                        backgroundColor: meta.bg
+                      }}
+                    >
+                      {meta.letter}
+                    </div>
+                  )
+                })}
+              </div>
+
+              {visibleBeatCount > 0 && (
+                <div className="roundtable-floating-quote message-pop">
+                  <div className="floating-quote-header">
+                    <div className="floating-quote-avatar" style={{ 
+                      backgroundColor: (allAgents.find(a => a.name.toLowerCase() === councilResult.beats[visibleBeatCount - 1].speaker.toLowerCase() || a.name.toLowerCase().includes(councilResult.beats[visibleBeatCount - 1].speaker.toLowerCase()))?.id ? agentMeta[allAgents.find(a => a.name.toLowerCase() === councilResult.beats[visibleBeatCount - 1].speaker.toLowerCase() || a.name.toLowerCase().includes(councilResult.beats[visibleBeatCount - 1].speaker.toLowerCase()))!.id]?.bg : 'var(--purple)')
+                    }}>
+                      {councilResult.beats[visibleBeatCount - 1].speaker[0]}
+                    </div>
+                    <div className="floating-quote-info">
+                      <div className="floating-speaker-name">
+                        <span>{councilResult.beats[visibleBeatCount - 1].speaker}</span>
+                        <span className="speaking-badge-pill">SPEAKING</span>
+                      </div>
+                      <span className="floating-beat-label">{councilResult.beats[visibleBeatCount - 1].label}</span>
+                    </div>
+                  </div>
+                  <p className="floating-quote-text">"{councilResult.beats[visibleBeatCount - 1].text}"</p>
+                </div>
+              )}
             </div>
           )}
+        </section>
+      )}
 
-          <div className="stance-list">
-            {councilResult.alignment ? (
-              councilResult.alignment.map((align) => {
-                const agentDetails = allAgents.find(
-                  (a) => a.name.toLowerCase() === align.agent.toLowerCase() ||
-                         a.name.toLowerCase().includes(align.agent.toLowerCase())
-                )
-                const colorClass = align.agreement >= 75 ? 'agree' : align.agreement >= 45 ? 'caution' : 'disagree'
-                return (
-                  <article key={align.agent} className={`stance-card ${colorClass}`}>
-                    <div className="stance-card-header">
-                      <h3>{align.agent}</h3>
-                      <span className="agreement-pill">{align.agreement}%</span>
-                    </div>
-                    <p className="stance-worry"><strong>Key Stance:</strong> {align.keyConcerns}</p>
-                    {agentDetails && <blockquote className="stance-quote">{agentDetails.line}</blockquote>}
-                  </article>
-                )
-              })
-            ) : (
-              selectedAgents.slice(0, 4).map((agent) => (
-                <article key={agent.id}>
-                  <h3>{agent.name}</h3>
-                  <p>{agent.stance}</p>
-                  <blockquote>{agent.line}</blockquote>
-                </article>
-              ))
-            )}
+      {/* Screen 4: Verdict Page */}
+      {screen === 'verdict' && (
+        <section className="screen-verdict-layout" aria-label="Verdict screen">
+          <div className="verdict-top-banner">
+            <div className="verdict-banner-left">
+              <div className="verdict-banner-header">
+                <span className="mono-label">The council has decided</span>
+                <span className="verdict-decision-badge">
+                  {averageAgreement && averageAgreement >= 70 ? 'CONDITIONAL GO' : 'HOLD / RE-EVALUATE'}
+                </span>
+              </div>
+              <h2 className="verdict-title-text">{councilResult.verdict.decision}</h2>
+              <div className="verdict-sub-info">
+                On: <strong>{question}</strong> · {selectedAgents.length} voices · 3 rounds · ~2 min
+              </div>
+            </div>
+            <div className="verdict-banner-right">
+              <span className="mono-label">Confidence</span>
+              <div className="confidence-score-value">
+                {averageAgreement && averageAgreement >= 75 ? 'High' : averageAgreement && averageAgreement >= 50 ? 'Medium-high' : 'Low'}
+              </div>
+              <div className="confidence-dots-row">
+                <div className={`conf-dot ${averageAgreement && averageAgreement >= 20 ? 'active' : ''}`}></div>
+                <div className={`conf-dot ${averageAgreement && averageAgreement >= 45 ? 'active' : ''}`}></div>
+                <div className={`conf-dot ${averageAgreement && averageAgreement >= 65 ? 'active' : ''}`}></div>
+                <div className={`conf-dot ${averageAgreement && averageAgreement >= 80 ? 'active' : ''}`}></div>
+                <div className={`conf-dot ${averageAgreement && averageAgreement >= 90 ? 'active' : ''}`}></div>
+              </div>
+              <p className="confidence-explanation">
+                {averageAgreement && averageAgreement >= 70 
+                  ? 'Strong agreement on the path; proceed under conditions.' 
+                  : 'Split council; evaluate concerns before proceeding.'}
+              </p>
+            </div>
+          </div>
+
+          <div className="verdict-bottom-grid">
+            {/* Left Side: Detail Cards & Checklist */}
+            <div className="verdict-left-detail-col">
+              <div className="verdict-details-grid">
+                <div className="detail-card cond-card">
+                  <span className="mono-label">Conditions to meet</span>
+                  <p className="detail-card-text">{councilResult.verdict.conditions}</p>
+                </div>
+                <div className="detail-card move-card">
+                  <span className="mono-label">First 24-hour move</span>
+                  <p className="detail-card-text">{councilResult.verdict.firstMove}</p>
+                </div>
+              </div>
+
+              <span className="mono-label" style={{ marginTop: '1.5rem', display: 'block' }}>
+                The 30-day proof sprint timeline
+              </span>
+              <div className="sprint-timeline-checklist">
+                <div className="sprint-step">
+                  <div className="sprint-step-number" style={{ background: 'linear-gradient(135deg, #4F7CF7, #7A5AF0)' }}>1</div>
+                  <div className="sprint-step-content">
+                    <span className="step-days">DAYS 1–3</span>
+                    <h4 className="step-title">Put a real price on it</h4>
+                    <p className="step-desc">Write one concrete paid offer and send it to five real prospects. Chase a yes, not feedback.</p>
+                  </div>
+                </div>
+                <div className="sprint-step">
+                  <div className="sprint-step-number" style={{ background: 'linear-gradient(135deg, #7A5AF0, #C66AC9)' }}>2</div>
+                  <div className="sprint-step-content">
+                    <span className="step-days">DAYS 4–21</span>
+                    <h4 className="step-title">Get to three buying conversations</h4>
+                    <p className="step-desc">Run it on nights and weekends. Keep the salary; spend evenings, not savings.</p>
+                  </div>
+                </div>
+                <div className="sprint-step">
+                  <div className="sprint-step-number" style={{ background: 'linear-gradient(135deg, #C66AC9, #E26AC9)' }}>3</div>
+                  <div className="sprint-step-content">
+                    <span className="step-days">DAY 30 · THE BAR TO QUIT</span>
+                    <h4 className="step-title">Decide on evidence, not mood</h4>
+                    <p className="step-desc">Quit only if you have 5 paid signups or 2 signed pilots — and at least 6 months of runway left.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="verdict-flip-card">
+                <div className="flip-warning-avatar">!</div>
+                <div className="flip-content">
+                  <span className="flip-title">WHAT WOULD FLIP THIS TO A NO</span>
+                  <p className="flip-desc">
+                    Zero paid interest after outreach, runway under 4 months, or the plan only works if you quit first. Then stay, and build on the side.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Side: Voting stats & Quote cards */}
+            <div className="verdict-right-voting-col">
+              <span className="mono-label">How the council voted</span>
+              
+              <div className="vote-segment-bar">
+                <div className="vote-fill-segment" style={{ flex: voteCounts.go || 1, backgroundColor: 'var(--green)' }}></div>
+                <div className="vote-fill-segment" style={{ flex: voteCounts.cond || 1, background: 'linear-gradient(90deg, var(--yellow), var(--purple))' }}></div>
+                <div className="vote-fill-segment" style={{ flex: voteCounts.hold || 1, backgroundColor: 'var(--parents)' }}></div>
+              </div>
+
+              <div className="vote-labels-row">
+                <span><b style={{ color: 'var(--green)' }}>{voteCounts.go}</b> go now</span>
+                <span><b style={{ color: 'var(--yellow)' }}>{voteCounts.cond}</b> conditional</span>
+                <span><b style={{ color: 'var(--parents)' }}>{voteCounts.hold}</b> hold</span>
+              </div>
+
+              <div className="agent-verdict-quotes-list">
+                {councilResult.alignment ? (
+                  councilResult.alignment.map((align) => {
+                    const agentDetails = allAgents.find(
+                      (a) => a.name.toLowerCase() === align.agent.toLowerCase() ||
+                             a.name.toLowerCase().includes(align.agent.toLowerCase())
+                    )
+                    const meta = agentDetails ? agentMeta[agentDetails.id] : { bg: '#7A5AF0', letter: align.agent[0] }
+                    const voteLabel = align.agreement >= 75 ? 'GO' : align.agreement >= 45 ? 'COND.' : 'HOLD'
+                    const voteClass = align.agreement >= 75 ? 'go' : align.agreement >= 45 ? 'cond' : 'hold'
+                    
+                    return (
+                      <div key={align.agent} className="agent-quote-card">
+                        <div className="quote-card-avatar" style={{ backgroundColor: meta.bg }}>
+                          {meta.letter}
+                        </div>
+                        <div className="quote-card-main">
+                          <div className="quote-card-header">
+                            <span className="quote-agent-name">{align.agent}</span>
+                            <span className={`quote-vote-pill ${voteClass}`}>{voteLabel}</span>
+                          </div>
+                          <p className="quote-card-phrase">"{align.keyConcerns}"</p>
+                        </div>
+                      </div>
+                    )
+                  })
+                ) : (
+                  selectedAgents.slice(0, 4).map((agent) => {
+                    const meta = agentMeta[agent.id] || { bg: '#7A5AF0', letter: agent.name[0] }
+                    return (
+                      <div key={agent.id} className="agent-quote-card">
+                        <div className="quote-card-avatar" style={{ backgroundColor: meta.bg }}>
+                          {meta.letter}
+                        </div>
+                        <div className="quote-card-main">
+                          <div className="quote-card-header">
+                            <span className="quote-agent-name">{agent.name}</span>
+                            <span className="quote-vote-pill cond">COND.</span>
+                          </div>
+                          <p className="quote-card-phrase">"{agent.stance}"</p>
+                        </div>
+                      </div>
+                    )
+                  })
+                )}
+              </div>
+
+              <div className="verdict-action-group">
+                <div className="verdict-save-row">
+                  <button 
+                    className="btn-save-verdict" 
+                    onClick={() => alert('Verdict saved to history local storage.')}
+                    type="button"
+                  >
+                    Save verdict
+                  </button>
+                  <button 
+                    className="btn-share-icon" 
+                    onClick={() => alert('Copied verdict link to clipboard.')}
+                    type="button"
+                  >
+                    ↗
+                  </button>
+                </div>
+                <button 
+                  className="btn-run-again" 
+                  onClick={() => setScreen('input')}
+                  type="button"
+                >
+                  ↺ Run again with new context
+                </button>
+              </div>
+            </div>
           </div>
         </section>
-
-        <section className="panel outcome-panel">
-          <p className="eyebrow">Verdict shape</p>
-          <h2>Unified response</h2>
-          <ul>
-            <li>
-              <span>Decision</span>
-              <strong>{councilResult.verdict.decision}</strong>
-            </li>
-            <li>
-              <span>Conditions</span>
-              <strong>{councilResult.verdict.conditions}</strong>
-            </li>
-            <li>
-              <span>First 24-hour move</span>
-              <strong>{councilResult.verdict.firstMove}</strong>
-            </li>
-          </ul>
-        </section>
-      </section>
+      )}
+      <footer className="app-footer" style={{ textAlign: 'center', fontSize: '11px', color: 'var(--muted)', padding: '24px 0 40px' }}>
+        <span>{statusMessage}</span>
+      </footer>
     </main>
   )
 }
 
-export default App
+export default App;
