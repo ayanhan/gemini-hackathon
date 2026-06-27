@@ -3,7 +3,17 @@
 The frontend and backend agree on this exact JSON shape:
 
     {
-      "beats": [{"label": str, "speaker": str, "text": str}, ...],
+      "beats": [
+        {
+          "label": str,
+          "speaker": str,
+          "text": str,
+          "audioBase64": str | None,
+          "audioMimeType": str | None,
+          "voice": str | None,
+        },
+        ...
+      ],
       "verdict": {"decision": str, "conditions": str, "firstMove": str}
     }
 
@@ -49,6 +59,9 @@ class Beat:
     label: str
     speaker: str
     text: str
+    audio_base64: str = ""
+    audio_mime_type: str = ""
+    voice: str = ""
 
 
 @dataclass
@@ -67,7 +80,20 @@ class CouncilResult:
         return json.dumps(
             {
                 "beats": [
-                    {"label": b.label, "speaker": b.speaker, "text": b.text}
+                    {
+                        "label": b.label,
+                        "speaker": b.speaker,
+                        "text": b.text,
+                        **(
+                            {
+                                "audioBase64": b.audio_base64,
+                                "audioMimeType": b.audio_mime_type,
+                                "voice": b.voice,
+                            }
+                            if b.audio_base64
+                            else {}
+                        ),
+                    }
                     for b in self.beats
                 ],
                 "verdict": {

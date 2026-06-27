@@ -79,6 +79,26 @@ async def _safe_speak(persona: Persona, prompt: str) -> str:
         return persona.line or ""
 
 
+async def _safe_audio(beat: Beat, voice: str, delivery_style: str) -> Beat:
+    """Attach TTS audio when possible without breaking text-only output."""
+    if beat.audio_base64:
+        return beat
+
+    try:
+        audio_base64, audio_mime_type = await voices.synthesize_speech(
+            beat.text, voice, delivery_style
+        )
+    except Exception:
+        return beat
+
+    if audio_base64:
+        beat.audio_base64 = audio_base64
+        beat.audio_mime_type = audio_mime_type
+        beat.voice = voice
+
+    return beat
+
+
 def _dedupe_name(name: str, used: dict[str, int]) -> str:
     """Keep speaker names stable + unique so the UI and TTS can key off them."""
     base = name.strip() or "Council member"
@@ -119,6 +139,8 @@ class CouncilOrchestrator(BaseAgent):
                         firstMove="Press start again to reconvene the council.",
                     ),
                 )
+
+        result = await self.add_audio(result, request)
 
         yield Event(
             author=self.name,
@@ -172,6 +194,30 @@ class CouncilOrchestrator(BaseAgent):
 
         beats = opening_beats + clash_beats + [verdict_beat]
         return CouncilResult(beats=beats, verdict=verdict)
+
+    async def add_audio(
+        self, result: CouncilResult, request: CouncilRequest
+    ) -> CouncilResult:
+        if not voices.tts_enabled():
+            return result
+
+        tone_by_name = {
+            persona.safe_name.lower(): persona.tone for persona in request.personas
+        }
+
+        await asyncio.gather(
+            *(
+                _safe_audio(
+                    beat,
+                    *voices.voice_profile_for(
+                        beat.speaker,
+                        tone_by_name.get(beat.speaker.lower(), ""),
+                    ),
+                )
+                for beat in result.beats
+            )
+        )
+        return result
 
     async def _verdict(
         self, request: CouncilRequest, transcript: str

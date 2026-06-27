@@ -10,9 +10,12 @@ export type CouncilAgent = {
 }
 
 export type DebateBeat = {
+  audioBase64?: string
+  audioMimeType?: string
   label: string
   speaker: string
   text: string
+  voice?: string
 }
 
 export type Verdict = {
@@ -202,9 +205,14 @@ const parseCouncilResult = (text: string): Omit<CouncilResult, 'source'> => {
 
   return {
     beats: parsed.beats.map((beat) => ({
+      audioBase64:
+        typeof beat.audioBase64 === 'string' ? beat.audioBase64 : undefined,
+      audioMimeType:
+        typeof beat.audioMimeType === 'string' ? beat.audioMimeType : undefined,
       label: String(beat.label),
       speaker: String(beat.speaker),
       text: String(beat.text),
+      voice: typeof beat.voice === 'string' ? beat.voice : undefined,
     })),
     verdict: {
       decision: String(parsed.verdict.decision),
