@@ -115,3 +115,6 @@ export AGENT_COUNCIL_MODEL=gemini-3.5-flash
 npm run gcp:deploy:adk
 npm run gcp:deploy:web
 ```
+
+## The team
+![The Venn Team](presentation/versions_of_you.jpeg)
