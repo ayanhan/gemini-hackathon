@@ -1,0 +1,740 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>venn · Agent Council — Gemini Tokyo Hackathon</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap"
+    rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #F4F5F9;
+      --surface: #FFFFFF;
+      --surface-2: #FBFBFE;
+      --border: #E4E6EE;
+      --ink: #16181F;
+      --ink-muted: #5A5E68;
+      --ink-dim: #8A8E98;
+      --blue: #5E76F6;
+      --purple: #7C5CF0;
+      --purple-ink: #815CF1;
+      --pink: #CA68D3;
+      --grad-brand: linear-gradient(100deg, #5E76F6 0%, #7C5CF0 50%, #CA68D3 100%);
+      --grad-cta: linear-gradient(95deg, #5E76F6 0%, #C768D4 100%);
+      --display: "Space Grotesk", "Inter", system-ui, sans-serif;
+      --body: "Inter", system-ui, sans-serif;
+      --mono: "Space Mono", ui-monospace, monospace;
+      --shadow-card: 0 10px 30px -18px rgba(22, 24, 31, .25);
+      --shadow-cta: 0 14px 30px -10px rgba(124, 92, 240, .45);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    html,
+    body {
+      height: 100%
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--body);
+      -webkit-font-smoothing: antialiased;
+      overflow: hidden;
+    }
+
+    /* faint grid backdrop */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image: linear-gradient(rgba(22, 24, 31, .025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(22, 24, 31, .025) 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+
+    .deck {
+      position: relative;
+      height: 100vh;
+      width: 100vw
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      padding: 7vh 9vw;
+      opacity: 0;
+      transition: opacity .4s ease;
+      overflow: auto;
+    }
+
+    .slide.active {
+      display: flex;
+      opacity: 1
+    }
+
+    .center {
+      align-items: center;
+      text-align: center
+    }
+
+    .eyebrow {
+      font-family: var(--display);
+      text-transform: uppercase;
+      letter-spacing: .22em;
+      font-size: .8rem;
+      font-weight: 600;
+      color: var(--purple-ink);
+      margin-bottom: 1.1rem;
+    }
+
+    h1 {
+      font-family: var(--display);
+      font-weight: 700;
+      letter-spacing: -.03em;
+      line-height: 1.03;
+      font-size: clamp(2.6rem, 6vw, 4.4rem)
+    }
+
+    h2 {
+      font-family: var(--display);
+      font-weight: 600;
+      letter-spacing: -.02em;
+      font-size: clamp(1.7rem, 3.4vw, 2.4rem);
+      margin-bottom: 2rem
+    }
+
+    p.lead {
+      color: var(--ink-muted);
+      font-size: clamp(1.05rem, 1.7vw, 1.3rem);
+      line-height: 1.55;
+      max-width: 54ch;
+      margin-top: 1.4rem
+    }
+
+    .center p.lead {
+      margin-left: auto;
+      margin-right: auto
+    }
+
+    .grad {
+      background: var(--grad-brand);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent
+    }
+
+    /* logo mark */
+    .logo {
+      width: 84px;
+      height: 84px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      margin: 0 auto 1.6rem;
+      background: conic-gradient(from 90deg, #E4693E, #CD8C1D, #51B8B8, #3ABCD2, #5E76F6, #7C5CF0, #CA68D3, #E4693E)
+    }
+
+    .logo i {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      background: var(--bg);
+      display: grid;
+      place-items: center
+    }
+
+    .logo i b {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #7F5CEF;
+      display: block
+    }
+
+    .tag {
+      display: inline-block;
+      font-family: var(--mono);
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      font-size: .7rem;
+      color: #fff;
+      background: var(--grad-cta);
+      padding: .36rem .8rem;
+      border-radius: 999px;
+    }
+
+    /* cards */
+    .grid {
+      display: grid;
+      gap: 18px;
+      margin-top: 2.4rem;
+      width: 100%
+    }
+
+    .g2 {
+      grid-template-columns: repeat(2, 1fr)
+    }
+
+    .g3 {
+      grid-template-columns: repeat(3, 1fr)
+    }
+
+    .g6 {
+      grid-template-columns: repeat(3, 1fr)
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 24px 26px;
+      box-shadow: var(--shadow-card);
+      text-align: left;
+    }
+
+    .card.tint {
+      background: linear-gradient(180deg, #fff, #F7F4FE)
+    }
+
+    .card h3 {
+      font-family: var(--display);
+      font-weight: 600;
+      font-size: 1.15rem;
+      margin-bottom: .5rem;
+      letter-spacing: -.01em
+    }
+
+    .card .k {
+      font-family: var(--mono);
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      font-size: .66rem;
+      color: var(--purple-ink);
+      margin-bottom: .7rem
+    }
+
+    .card p {
+      color: var(--ink-muted);
+      font-size: .96rem;
+      line-height: 1.5
+    }
+
+    .chip {
+      display: flex;
+      align-items: center;
+      gap: .85rem
+    }
+
+    .ava {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      font-size: .85rem;
+      color: #fff;
+      flex: none;
+      font-family: var(--display)
+    }
+
+    .hatdot {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      flex: none;
+      border: 1px solid var(--border)
+    }
+
+    /* CTA + pills */
+    .cta {
+      display: inline-flex;
+      align-items: center;
+      gap: .6rem;
+      font-family: var(--display);
+      font-weight: 600;
+      font-size: 1.05rem;
+      color: #fff;
+      background: var(--grad-cta);
+      border: none;
+      border-radius: 14px;
+      padding: .95rem 1.7rem;
+      box-shadow: var(--shadow-cta);
+      text-decoration: none;
+      margin-top: 2.2rem;
+      cursor: pointer
+    }
+
+    .pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .6rem;
+      margin-top: 1.8rem;
+      justify-content: center
+    }
+
+    .pill {
+      font-family: var(--mono);
+      font-size: .78rem;
+      color: var(--ink-muted);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 999px;
+      padding: .45rem .9rem
+    }
+
+    /* avatar preview row */
+    .avarow {
+      display: flex;
+      gap: .7rem;
+      justify-content: center;
+      margin-top: 2.2rem
+    }
+
+    .avarow .ava {
+      width: 46px;
+      height: 46px
+    }
+
+    /* team */
+    .team {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 28px;
+      margin-top: 3rem;
+      width: 100%
+    }
+
+    .member {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 1rem
+    }
+
+    .member img {
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      border: 3px solid var(--surface);
+      box-shadow: var(--shadow-card);
+      object-fit: cover;
+      background: var(--surface-2)
+    }
+
+    .member .name {
+      font-family: var(--display);
+      font-weight: 600;
+      font-size: 1.4rem
+    }
+
+    .member a {
+      color: var(--ink-dim);
+      font-family: var(--mono);
+      font-size: .92rem;
+      text-decoration: none
+    }
+
+    .member a:hover {
+      color: var(--purple)
+    }
+
+    .meta {
+      position: absolute;
+      top: 5vh;
+      left: 9vw;
+      right: 9vw;
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--mono);
+      font-size: .72rem;
+      color: var(--ink-dim);
+      text-transform: uppercase;
+      letter-spacing: .14em
+    }
+
+    .caption {
+      font-family: var(--mono);
+      font-size: .78rem;
+      color: var(--ink-dim);
+      margin-top: 2rem;
+      letter-spacing: .04em
+    }
+
+    /* Alex card */
+    .alex-card {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 28px;
+      align-items: center
+    }
+
+    .alex-img {
+      width: 100%;
+      height: 220px;
+      border-radius: 18px;
+      object-fit: cover;
+      border: 3px solid var(--surface);
+      box-shadow: var(--shadow-card)
+    }
+
+    /* Block Diagram styles */
+    .diagram-card {
+      padding: 22px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      justify-content: center;
+      align-items: center
+    }
+
+    .node {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02)
+    }
+
+    .node strong {
+      font-family: var(--display);
+      font-size: .92rem;
+      display: block;
+      color: var(--ink)
+    }
+
+    .node small {
+      color: var(--ink-muted);
+      font-size: .76rem;
+      font-family: var(--mono)
+    }
+
+    .node-user {
+      border-left: 4px solid var(--purple)
+    }
+
+    .node-adk {
+      border-left: 4px solid var(--blue)
+    }
+
+    .node-council {
+      border-left: 4px solid var(--pink);
+      background: var(--surface-2)
+    }
+
+    .node-blue {
+      border-left: 4px solid var(--blue);
+      background: linear-gradient(135deg, #fff, #F0F4FF)
+    }
+
+    .node-verdict {
+      border-left: 4px solid #3ABCD2;
+      background: linear-gradient(135deg, #fff, #E8F8FA)
+    }
+
+    .arrow {
+      color: var(--purple);
+      font-weight: 700;
+      font-size: 1rem;
+      line-height: 1
+    }
+
+    .mini-chips {
+      display: flex;
+      gap: 4px;
+      justify-content: center;
+      margin-top: 6px;
+      flex-wrap: wrap
+    }
+
+    .mini-chips span {
+      font-size: .62rem;
+      color: #fff;
+      padding: 2px 6px;
+      border-radius: 999px;
+      font-family: var(--mono);
+      font-weight: 600
+    }
+
+    /* nav */
+    .nav {
+      position: fixed;
+      bottom: 3vh;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1rem;
+      z-index: 20
+    }
+
+    .dots {
+      display: flex;
+      gap: 7px
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--border);
+      transition: .3s;
+      cursor: pointer
+    }
+
+    .dot.on {
+      background: var(--purple);
+      width: 20px;
+      border-radius: 999px
+    }
+
+    .count {
+      font-family: var(--mono);
+      font-size: .72rem;
+      color: var(--ink-dim);
+      letter-spacing: .1em
+    }
+
+    .hint {
+      position: fixed;
+      bottom: 3vh;
+      right: 3vw;
+      font-family: var(--mono);
+      font-size: .66rem;
+      color: var(--ink-dim);
+      z-index: 20
+    }
+
+    @media (max-width:760px) {
+
+      .g2,
+      .g3,
+      .g6 {
+        grid-template-columns: 1fr
+      }
+
+      .team {
+        grid-template-columns: repeat(2, 1fr)
+      }
+
+      .member img {
+        width: 140px;
+        height: 140px
+      }
+
+      .alex-card {
+        grid-template-columns: 1fr
+      }
+
+      .alex-img {
+        height: 180px;
+        width: 180px;
+        margin: 0 auto
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="deck" id="deck">
+
+    <!-- SLIDE 1: HOOK -->
+    <section class="slide active center">
+      <div class="meta"><span>Gemini Tokyo Hackathon</span><span>27.06.2026</span></div>
+      <div class="logo"><i><b></b></i></div>
+      <div class="eyebrow">Six voices · One verdict</div>
+      <h1>Put your hardest decision<br />in front of<br /><span class="grad">every version of you.</span></h1>
+    </section>
+
+    <!-- SLIDE 2: MEET ALEX -->
+    <section class="slide">
+      <div class="eyebrow">Every big Decision starts with a question</div>
+      <!-- <h2></h2> -->
+      <div class="card tint alex-card" style="margin-top:1.5rem">
+        <img src="alex_avatar.png" alt="Alex" class="alex-img" />
+        <div>
+          <!-- <div class="k">Archetype · Early 30s Professional</div> -->
+          <h3 style="font-size:1.5rem; margin-bottom:1rem;">Alex is good at their job, but not feeling valued.</h3>
+          <p style="font-size:1.8rem; line-height:1.6; color:#9b51e0; font-weight:600;">
+            Should they leave and start their own business?
+          </p>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- SLIDE 4: ENTER VENN -->
+    <section class="slide">
+      <div class="eyebrow">Introducing Venn: Your custom council to answer Life's Hardest Questions</div>
+      <div class="grid g2" style="margin-top:1.8rem">
+      </div>
+      <div style="margin-top: 2rem; text-align: center;">
+        <img src="venn_council.png" alt="Venn Council"
+          style="max-width: 100%; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.15);" />
+      </div>
+    </section>
+
+    <!-- SLIDE 5: THE COUNCIL -->
+    <section class="slide">
+      <div class="eyebrow">HOW IT WORKS</div>
+      <h2>The Council Deliberation Framework</h2>
+      <div class="grid g3">
+        <div class="card">
+          <div class="k">Phase 01</div>
+          <h3>Context Interview</h3>
+          <p>Grounded in real constraints — runway, finances, risk appetite, timing, and personal goals.</p>
+        </div>
+        <div class="card">
+          <div class="k">Phase 02</div>
+          <h3>6 Voices × 6 Hats</h3>
+          <p>Multi-agent personas (Mentor, Buddy, Parents, etc.) debate through specialized cognitive modes.</p>
+        </div>
+        <div class="card tint">
+          <div class="k">Phase 03</div>
+          <h3>Unified Verdict</h3>
+          <p>Synthesizes opposing viewpoints into one actionable recommendation and immediate next steps.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 6: TECH & WORKFLOW -->
+    <section class="slide">
+      <div class="eyebrow">Architecture & Workflow</div>
+      <h2>Built on Google AI & Agentic Intelligence</h2>
+      <div class="grid g2" style="margin-top:1.6rem; align-items:center;">
+        <!-- Left: Google Tech Stack -->
+        <div style="display:flex; flex-direction:column; gap:14px;">
+          <div class="card">
+            <div class="k">Reasoning Engine</div>
+            <h3>Gemini 3.5 Flash</h3>
+            <p>Native JSON-schema output for valid, parseable multi-agent debates and structured verdicts. Hosted on
+              Vertex AI.</p>
+          </div>
+          <div class="card">
+            <div class="k">Orchestration</div>
+            <h3>Agent Development Kit (ADK)</h3>
+            <p>ADK manages the multi-agent council securely, handling session registration, state persistence, and
+              prompt routing.</p>
+          </div>
+          <div class="card">
+            <div class="k">Delivery</div>
+            <h3>Cloud Run & GenAI JS SDK</h3>
+            <p>Serverless container infrastructure with low-latency client streaming for real-time council deliberation.
+            </p>
+          </div>
+        </div>
+
+        <!-- Right: Agentic Workflow HTML Block Diagram -->
+        <div class="card tint diagram-card">
+          <div class="k" style="width:100%; text-align:left;">Agentic Workflow Diagram</div>
+          <div class="node node-user">
+            <strong>User Dilemma Input</strong>
+            <small>"Should I stay or build?"</small>
+          </div>
+          <div class="arrow">↓</div>
+          <div class="node node-adk">
+            <strong>ADK Orchestrator</strong>
+            <small>Context Grounding & Session State</small>
+          </div>
+          <div class="arrow">↓</div>
+          <div class="node node-council">
+            <strong>6 Council Personas × 6 Thinking Hats</strong>
+            <div class="mini-chips">
+              <span style="background:#3ABCD2">Mentor</span>
+              <span style="background:#CD8C1D">Buddy</span>
+              <span style="background:#E4693E">18yo</span>
+              <span style="background:#5E62C9">Future</span>
+              <span style="background:#51B8B8">$</span>
+              <span style="background:#CD5881">Parents</span>
+            </div>
+          </div>
+          <div class="arrow">↓</div>
+          <div class="node node-blue">
+            <strong>Blue Hat Deliberation & Synthesis</strong>
+          </div>
+          <div class="arrow">↓</div>
+          <div class="node node-verdict">
+            <strong>Structured Verdict Dossier</strong>
+            <small>Go / Hold / Conditional + 24-hr Move</small>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 7: THE TEAM -->
+    <section class="slide center">
+      <div class="eyebrow">The Humans Behind the Council</div>
+      <h2>Team Venn</h2>
+      <div class="team">
+        <div class="member"><img src="atul.jpg" alt="Atul" />
+          <div class="name">Atul</div><a href="https://github.com/ibatulanandjp" target="_blank">@ibatulanandjp</a>
+        </div>
+        <div class="member"><img src="ayan.jpg" alt="Ayan" />
+          <div class="name">Ayan</div><a href="https://github.com/ayanhan" target="_blank">@ayanhan</a>
+        </div>
+        <div class="member"><img src="shane.jpg" alt="Shane" />
+          <div class="name">Shane</div><a href="https://github.com/BrownMShane" target="_blank">@BrownMShane</a>
+        </div>
+        <div class="member"><img src="valerio.jpg" alt="Valerio" />
+          <div class="name">Valerio</div><a href="https://github.com/valeriosalvucci"
+            target="_blank">@valeriosalvucci</a>
+        </div>
+        <div class="member"><img src="padmanabh.jpg" alt="Padmanabh" />
+          <div class="name">Padmanabh</div><a href="https://github.com/padmanabh-g" target="_blank">@padmanabh-g</a>
+        </div>
+      </div>
+      <p class="lead" style="margin-top:2.6rem">Thank you — now put your hardest decision in front of <span
+          class="grad">every version of you.</span></p>
+    </section>
+
+  </div>
+
+  <div class="nav">
+    <div class="dots" id="dots"></div>
+    <div class="count" id="count">01 / 07</div>
+  </div>
+  <div class="hint">← → · space</div>
+
+  <script>
+    const slides = [...document.querySelectorAll('.slide')];
+    const dots = document.getElementById('dots');
+    const count = document.getElementById('count');
+    let i = 0;
+    slides.forEach((_, n) => { const d = document.createElement('div'); d.className = 'dot'; d.onclick = () => go(n); dots.appendChild(d) });
+    const pad = n => String(n).padStart(2, '0');
+    function go(n) {
+      i = Math.max(0, Math.min(slides.length - 1, n));
+      slides.forEach((s, k) => s.classList.toggle('active', k === i));
+      [...dots.children].forEach((d, k) => d.classList.toggle('on', k === i));
+      count.textContent = `${pad(i + 1)} / ${pad(slides.length)}`;
+    }
+    document.addEventListener('keydown', e => {
+      if (['ArrowRight', 'ArrowDown', ' ', 'PageDown'].includes(e.key)) { e.preventDefault(); go(i + 1) }
+      if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key)) { e.preventDefault(); go(i - 1) }
+      if (e.key === 'Home') go(0); if (e.key === 'End') go(slides.length - 1);
+    });
+    let sx = 0;
+    addEventListener('touchstart', e => sx = e.touches[0].clientX, { passive: true });
+    addEventListener('touchend', e => { const dx = e.changedTouches[0].clientX - sx; if (Math.abs(dx) > 50) go(i + (dx < 0 ? 1 : -1)) }, { passive: true });
+    go(0);
+  </script>
+</body>
+
+</html>
