@@ -92,6 +92,13 @@ type StoredCouncilState = {
   userContext?: UserContextAnswer[]
 }
 
+type CouncilPreset = {
+  answers: string[]
+  agentIds: string[]
+  label: string
+  question: string
+}
+
 const defaultQuestion = 'Should I quit my 9-to-5 and build a startup?'
 
 const defaultUserContext = interviewQuestions.map((interviewQuestion) => ({
@@ -127,6 +134,94 @@ const mergeStoredContext = (
       ? { ...defaultAnswer, answer: savedAnswer.answer }
       : defaultAnswer
   })
+
+const councilPresets: CouncilPreset[] = [
+  {
+    label: 'Startup decision',
+    question: 'Should I quit my job and build a startup full-time?',
+    agentIds: ['mentor', 'buddy', 'failed', 'millionaire', 'parents'],
+    answers: [
+      'Build something real without losing momentum.',
+      'Quitting too early and running out of money.',
+      'About 6 months if I cut expenses.',
+      'My family and current team will feel the impact.',
+      'I want to decide within the next 30 days.',
+      'I have built a rough prototype and talked to a few users.',
+      'Paying customers or strong weekly user growth.',
+      'No one cares enough to use or pay for it.',
+      'Courage with financial discipline.',
+      'Do not burn bridges with my current job.',
+    ],
+  },
+  {
+    label: 'Relationship decision',
+    question: 'Should I stay in this relationship or move on?',
+    agentIds: ['mentor', 'buddy', 'eighteen', 'parents'],
+    answers: [
+      'Clarity without being cruel or avoidant.',
+      'Wasting more time or hurting someone unnecessarily.',
+      'Money is not the main constraint.',
+      'My partner, close friends, and my emotional health.',
+      'I need to decide before another big commitment.',
+      'I have tried honest talks, space, and changing routines.',
+      'Consistent trust, effort, and calm communication.',
+      'Repeated avoidance, resentment, or incompatible futures.',
+      'Honesty and emotional safety.',
+      'Do not make the decision from one bad week.',
+    ],
+  },
+  {
+    label: 'Career move',
+    question: 'Should I take the new job or stay where I am?',
+    agentIds: ['mentor', 'buddy', 'failed', 'millionaire', 'parents'],
+    answers: [
+      'A better learning curve and stronger long-term options.',
+      'Choosing prestige over actual growth.',
+      'Enough savings to handle a transition.',
+      'My family, manager, and future self.',
+      'The offer deadline is soon.',
+      'I compared role scope, compensation, team, and growth.',
+      'Clear ownership, better mentorship, and fair compensation.',
+      'Vague role, weak manager, or values mismatch.',
+      'Learning rate and integrity.',
+      'Do not ignore health or burnout signals.',
+    ],
+  },
+  {
+    label: 'Money/risk decision',
+    question: 'Should I take this financial risk right now?',
+    agentIds: ['mentor', 'buddy', 'failed', 'parents'],
+    answers: [
+      'Upside without destroying stability.',
+      'Overconfidence, debt, or a hidden downside.',
+      'Emergency fund covers around 4 months.',
+      'My family and future obligations.',
+      'The opportunity window may close this month.',
+      'I have checked basic numbers but not worst-case scenarios.',
+      'Downside is capped and upside is meaningful.',
+      'Loss would force bad decisions or debt.',
+      'Security and optionality.',
+      'Keep an emergency reserve untouched.',
+    ],
+  },
+  {
+    label: 'Creative project',
+    question: 'Should I commit seriously to this creative project?',
+    agentIds: ['mentor', 'buddy', 'eighteen', 'failed', 'millionaire'],
+    answers: [
+      'Make something original and finish it.',
+      'Spending months polishing something nobody sees.',
+      'I can fund a small version myself.',
+      'My collaborators, audience, and future portfolio.',
+      'I want a finished version within 8 weeks.',
+      'I have sketches, notes, or a partial prototype.',
+      'A small audience reacts strongly and asks for more.',
+      'I avoid shipping or cannot explain why it matters.',
+      'Taste, courage, and completion.',
+      'Scope must stay small enough to finish.',
+    ],
+  },
+]
 
 function App() {
   const [question, setQuestion] = useState(
@@ -223,6 +318,23 @@ function App() {
     setWildcardName('')
     setWildcardTone('')
     setWildcardProtects('')
+  }
+
+  const applyPreset = (preset: CouncilPreset) => {
+    const customAgentIds = customAgents.map((agent) => agent.id)
+
+    setQuestion(preset.question)
+    setUserContext(
+      defaultUserContext.map((item, index) => ({
+        ...item,
+        answer: preset.answers[index] ?? '',
+      })),
+    )
+    setSelectedAgentIds([...preset.agentIds, ...customAgentIds])
+    setSessionStarted(false)
+    setVisibleBeatCount(fallbackCouncilResult.beats.length)
+    setCouncilResult(fallbackCouncilResult)
+    setStatusMessage('Preset loaded. Adjust details, then start the council.')
   }
 
   const updateContextAnswer = (index: number, answer: string) => {
@@ -322,6 +434,17 @@ function App() {
               onChange={(event) => setQuestion(event.target.value)}
               rows={4}
             />
+            <div className="preset-row" aria-label="Council presets">
+              {councilPresets.map((preset) => (
+                <button
+                  key={preset.label}
+                  type="button"
+                  onClick={() => applyPreset(preset)}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
             <div className="question-actions">
               <button
                 disabled={isGenerating || !question.trim()}

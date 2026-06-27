@@ -152,6 +152,33 @@ textarea:focus {
   outline: 3px solid rgba(0, 168, 204, 0.22);
 }
 
+.preset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.preset-row button {
+  background: #fffaf0;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink);
+  cursor: pointer;
+  flex: 1 1 9.5rem;
+  font: 800 0.76rem/1 var(--mono);
+  min-height: 2.35rem;
+  padding: 0 0.75rem;
+  text-transform: uppercase;
+}
+
+.preset-row button:hover,
+.preset-row button:focus-visible {
+  background: var(--gold);
+  border-color: var(--ink);
+  outline: none;
+}
+
 .question-actions {
   align-items: center;
   display: flex;
