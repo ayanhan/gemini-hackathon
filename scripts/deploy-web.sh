@@ -11,6 +11,7 @@ PROJECT="${GOOGLE_CLOUD_PROJECT}"
 REGION="$(gcp_region)"
 SERVICE="$(web_service_name)"
 ADK_URL="$(resolve_adk_url)"
+IMAGE="${REGION}-docker.pkg.dev/${PROJECT}/cloud-run-source-deploy/${SERVICE}:$(git rev-parse --short HEAD)-$(date +%Y%m%d%H%M%S)"
 
 if [[ -z "${ADK_URL}" ]]; then
   echo "Could not resolve ADK backend URL." >&2
@@ -18,13 +19,18 @@ if [[ -z "${ADK_URL}" ]]; then
   exit 1
 fi
 
-echo "Deploying web frontend (${SERVICE}) with VITE_ADK_API_URL=${ADK_URL}..."
+echo "Building web frontend image with VITE_ADK_API_URL=${ADK_URL}..."
+gcloud builds submit . \
+  --project "${PROJECT}" \
+  --config "${SCRIPT_DIR}/cloudbuild-web.yaml" \
+  --substitutions "_IMAGE=${IMAGE},_VITE_ADK_API_URL=${ADK_URL}"
+
+echo "Deploying web frontend (${SERVICE})..."
 gcloud run deploy "${SERVICE}" \
-  --source . \
+  --image "${IMAGE}" \
   --project "${PROJECT}" \
   --region "${REGION}" \
-  --allow-unauthenticated \
-  --build-arg "VITE_ADK_API_URL=${ADK_URL}"
+  --allow-unauthenticated
 
 WEB_URL="$(gcloud run services describe "${SERVICE}" \
   --project "${PROJECT}" \

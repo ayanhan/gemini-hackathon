@@ -49,6 +49,24 @@ class TranscribeRequest(BaseModel):
     question: str = ""
 
 
+def clean_transcription(text: str) -> str:
+    cleaned = text.strip().strip('"').strip("'").strip()
+    lower = cleaned.lower()
+    silence_markers = (
+        "no speech",
+        "no audible speech",
+        "no spoken",
+        "silent",
+        "silence",
+        "empty audio",
+    )
+
+    if any(marker in lower for marker in silence_markers):
+        return ""
+
+    return cleaned
+
+
 @app.post("/transcribe")
 async def transcribe(req: TranscribeRequest) -> dict[str, str]:
     """Transcribe a short spoken answer server-side (no client API key needed)."""
@@ -66,7 +84,7 @@ async def transcribe(req: TranscribeRequest) -> dict[str, str]:
             types.Part.from_bytes(data=audio_bytes, mime_type=req.mimeType),
         ],
     )
-    return {"text": (response.text or "").strip()}
+    return {"text": clean_transcription(response.text or "")}
 
 
 if __name__ == "__main__":
