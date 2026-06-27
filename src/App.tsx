@@ -391,6 +391,36 @@ function App() {
     return { go, cond, hold }
   }, [councilResult])
 
+  const tension = useMemo(() => {
+    const alignment = councilResult.alignment
+    if (!alignment || alignment.length < 2) {
+      return null
+    }
+    const sorted = [...alignment].sort((a, b) => b.agreement - a.agreement)
+    const high = sorted[0]
+    const low = sorted[sorted.length - 1]
+    return { high, low, spread: high.agreement - low.agreement }
+  }, [councilResult])
+
+  const tensionLabel = tension
+    ? tension.spread >= 50
+      ? 'High'
+      : tension.spread >= 25
+        ? 'Medium'
+        : 'Low'
+    : 'Medium'
+
+  const activeBeatLabel =
+    visibleBeatCount > 0
+      ? councilResult.beats[visibleBeatCount - 1]?.label ?? ''
+      : ''
+  const roundNum =
+    activeBeatLabel === 'Verdict'
+      ? 3
+      : activeBeatLabel === 'Rebuttal'
+        ? 2
+        : 1
+
   const startRecording = async (index: number) => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
@@ -1137,12 +1167,14 @@ function App() {
             </div>
             <div className="subheader-right">
               <div className="progress-bars-group">
-                <div className={`bar-step ${visibleBeatCount >= 1 ? 'active' : ''}`}></div>
-                <div className={`bar-step ${visibleBeatCount >= 2 ? 'active' : ''}`}></div>
-                <div className={`bar-step ${visibleBeatCount >= 3 ? 'active' : ''}`}></div>
+                <div className={`bar-step ${roundNum >= 1 ? 'active' : ''}`}></div>
+                <div className={`bar-step ${roundNum >= 2 ? 'active' : ''}`}></div>
+                <div className={`bar-step ${roundNum >= 3 ? 'active' : ''}`}></div>
               </div>
               <span className="round-indicator">
-                Round {Math.min(3, Math.max(1, Math.ceil(visibleBeatCount / 1.5)))} / 3 · {isGenerating ? 'Summoning...' : `00:${(30 - (visibleBeatCount * 6)).toString().padStart(2, '0')}`}
+                {isGenerating
+                  ? 'Summoning…'
+                  : `Round ${roundNum} / 3 · ${activeBeatLabel || 'Live'}`}
               </span>
               <button className="btn-skip-verdict" onClick={() => setScreen('verdict')} type="button">
                 Skip to verdict →
@@ -1212,10 +1244,10 @@ function App() {
                 <div className="tension-card">
                   <div className="tension-header">
                     <span className="mono-label">Disagreement</span>
-                    <span className="tension-badge">High</span>
+                    <span className="tension-badge">{tensionLabel}</span>
                   </div>
                   <div className="tension-progress-bar">
-                    <div className="tension-progress-fill" style={{ width: '78%' }}></div>
+                    <div className="tension-progress-fill" style={{ width: `${tension ? tension.spread : 50}%` }}></div>
                   </div>
                   <p className="tension-desc">Strong tension is good — it means the bet is being stress-tested from both sides.</p>
                 </div>
@@ -1281,25 +1313,17 @@ function App() {
 
                 <span className="mono-label" style={{ marginTop: '1.5rem' }}>Points of tension</span>
                 <div className="tension-points-list">
-                  {visibleBeatCount >= 2 && (
+                  {tension && tension.spread > 0 ? (
                     <div className="tension-point-item message-pop">
-                      <span className="tension-point-title">Quit now vs. test first</span>
+                      <span className="tension-point-title">Biggest split on the table</span>
                       <div className="tension-point-orbit-bar" aria-label="orbit graphics">
-                        <span className="orbit-name">18-yo</span>
+                        <span className="orbit-name">{tension.low.agent}</span>
                         <div className="orbit-dashed-line"></div>
-                        <span className="orbit-name">Mentor</span>
+                        <span className="orbit-name">{tension.high.agent}</span>
                       </div>
                     </div>
-                  )}
-                  {visibleBeatCount >= 4 && (
-                    <div className="tension-point-item message-pop">
-                      <span className="tension-point-title">Savings vs. safety net</span>
-                      <div className="tension-point-orbit-bar" aria-label="orbit graphics">
-                        <span className="orbit-name">Millionaire</span>
-                        <div className="orbit-dashed-line"></div>
-                        <span className="orbit-name">Parents</span>
-                      </div>
-                    </div>
+                  ) : (
+                    <p className="tension-desc">Tracking where the voices diverge…</p>
                   )}
                 </div>
               </div>
@@ -1313,9 +1337,9 @@ function App() {
                 
                 <div className="roundtable-center-dial">
                   <div className="center-dial-pulse"></div>
-                  <span className="center-dial-delib">DELIBERATING</span>
-                  <span className="center-dial-time">00:12</span>
-                  <span className="center-dial-round">Round 2 of 3</span>
+                  <span className="center-dial-delib">{isGenerating ? 'SUMMONING' : 'DELIBERATING'}</span>
+                  <span className="center-dial-time">{activeBeatLabel || '—'}</span>
+                  <span className="center-dial-round">Round {roundNum} of 3</span>
                 </div>
 
                 {selectedAgents.map((agent, i) => {
@@ -1421,42 +1445,13 @@ function App() {
                 </div>
               </div>
 
-              <span className="mono-label" style={{ marginTop: '1.5rem', display: 'block' }}>
-                The 30-day proof sprint timeline
-              </span>
-              <div className="sprint-timeline-checklist">
-                <div className="sprint-step">
-                  <div className="sprint-step-number" style={{ background: 'linear-gradient(135deg, #4F7CF7, #7A5AF0)' }}>1</div>
-                  <div className="sprint-step-content">
-                    <span className="step-days">DAYS 1–3</span>
-                    <h4 className="step-title">Put a real price on it</h4>
-                    <p className="step-desc">Write one concrete paid offer and send it to five real prospects. Chase a yes, not feedback.</p>
-                  </div>
-                </div>
-                <div className="sprint-step">
-                  <div className="sprint-step-number" style={{ background: 'linear-gradient(135deg, #7A5AF0, #C66AC9)' }}>2</div>
-                  <div className="sprint-step-content">
-                    <span className="step-days">DAYS 4–21</span>
-                    <h4 className="step-title">Get to three buying conversations</h4>
-                    <p className="step-desc">Run it on nights and weekends. Keep the salary; spend evenings, not savings.</p>
-                  </div>
-                </div>
-                <div className="sprint-step">
-                  <div className="sprint-step-number" style={{ background: 'linear-gradient(135deg, #C66AC9, #E26AC9)' }}>3</div>
-                  <div className="sprint-step-content">
-                    <span className="step-days">DAY 30 · THE BAR TO QUIT</span>
-                    <h4 className="step-title">Decide on evidence, not mood</h4>
-                    <p className="step-desc">Quit only if you have 5 paid signups or 2 signed pilots — and at least 6 months of runway left.</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="verdict-flip-card">
+              <div className="verdict-flip-card" style={{ marginTop: '1.5rem' }}>
                 <div className="flip-warning-avatar">!</div>
                 <div className="flip-content">
-                  <span className="flip-title">WHAT WOULD FLIP THIS TO A NO</span>
+                  <span className="flip-title">WHAT WOULD FLIP THIS DECISION</span>
                   <p className="flip-desc">
-                    Zero paid interest after outreach, runway under 4 months, or the plan only works if you quit first. Then stay, and build on the side.
+                    {councilResult.verdict.flipRisk ||
+                      'New evidence that overturns the council’s core assumption would change this call.'}
                   </p>
                 </div>
               </div>

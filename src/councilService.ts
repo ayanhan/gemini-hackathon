@@ -22,6 +22,7 @@ export type Verdict = {
   decision: string
   conditions: string
   firstMove: string
+  flipRisk?: string
 }
 
 export type AgentAlignment = {
@@ -71,6 +72,8 @@ const fallbackResult: Omit<CouncilResult, 'source'> = {
       'You need visible demand, a clear money runway, and a plan that does not depend on panic motivation.',
     firstMove:
       'Write one paid offer tonight and send it to five real potential customers tomorrow.',
+    flipRisk:
+      'Zero paid interest after real outreach, or runway dropping under four months, flips this to a clear no.',
   },
   alignment: [
     { agent: 'Mentor', agreement: 80, keyConcerns: 'Small reversible steps first' },
@@ -139,7 +142,8 @@ Use this exact shape:
   "verdict": {
     "decision": "clear unified decision, max 18 words",
     "conditions": "what must be true first, max 28 words",
-    "firstMove": "one concrete action within 24 hours, max 24 words"
+    "firstMove": "one concrete action within 24 hours, max 24 words",
+    "flipRisk": "what would flip this to the opposite answer, max 26 words"
   },
   "alignment": [
     {
@@ -229,6 +233,7 @@ const parseCouncilResult = (text: string): Omit<CouncilResult, 'source'> => {
       decision: String(parsed.verdict.decision),
       conditions: String(parsed.verdict.conditions),
       firstMove: String(parsed.verdict.firstMove),
+      flipRisk: parsed.verdict.flipRisk ? String(parsed.verdict.flipRisk) : undefined,
     },
     alignment,
   }
