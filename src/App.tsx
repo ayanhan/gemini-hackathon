@@ -276,7 +276,7 @@ function App() {
   const councilAudioRef = useRef<HTMLAudioElement | null>(null)
 
   const [screen, setScreen] = useState<'input' | 'assembly' | 'deliberating' | 'verdict'>(
-    storedState.councilResult ? 'verdict' : 'input'
+    'input',
   )
   const [category, setCategory] = useState('Startup')
   const [debateViewMode, setDebateViewMode] = useState<'threaded' | 'roundtable'>('threaded')
