@@ -53,13 +53,20 @@ def clean_transcription(text: str) -> str:
     cleaned = text.strip().strip('"').strip("'").strip()
     lower = cleaned.lower()
     silence_markers = (
+        "no audio",
         "no speech",
         "no audible speech",
         "no spoken",
+        "cannot transcribe",
+        "unable to transcribe",
+        "blank audio",
         "silent",
         "silence",
         "empty audio",
     )
+
+    if not any(char.isalnum() for char in cleaned):
+        return ""
 
     if any(marker in lower for marker in silence_markers):
         return ""
