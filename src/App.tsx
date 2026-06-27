@@ -465,42 +465,94 @@ function App() {
       return
     }
 
-    setVisibleBeatCount(0)
-    const timers = councilResult.beats.map((_, index) =>
-      window.setTimeout(() => {
-        setVisibleBeatCount(index + 1)
-      }, 3000 * (index + 1))
-    )
+    let cancelled = false
+    const timeoutIds = new Set<number>()
+    const audio = councilAudioRef.current ?? new Audio()
+    councilAudioRef.current = audio
+    const waitWithTracking = (callback: () => void, ms: number) => {
+      let timeoutId = 0
+      timeoutId = window.setTimeout(() => {
+        timeoutIds.delete(timeoutId)
+        callback()
+      }, ms)
+      timeoutIds.add(timeoutId)
+      return timeoutId
+    }
 
-    const finalTimer = window.setTimeout(() => {
-      setScreen('verdict')
-    }, 3000 * (councilResult.beats.length + 1))
+    const wait = (ms: number) =>
+      new Promise<void>((resolve) => {
+        waitWithTracking(resolve, ms)
+      })
+
+    const playBeatAudio = (beatIndex: number) =>
+      new Promise<void>((resolve) => {
+        const beat = councilResult.beats[beatIndex]
+
+        if (!beat?.audioBase64) {
+          waitWithTracking(resolve, 3000)
+          return
+        }
+
+        let settled = false
+        let fallbackTimeoutId = 0
+        const finish = () => {
+          if (settled) {
+            return
+          }
+
+          settled = true
+          timeoutIds.delete(fallbackTimeoutId)
+          window.clearTimeout(fallbackTimeoutId)
+          audio.removeEventListener('ended', finish)
+          audio.removeEventListener('error', finish)
+          resolve()
+        }
+
+        audio.pause()
+        audio.currentTime = 0
+        audio.src = `data:${beat.audioMimeType ?? 'audio/wav'};base64,${beat.audioBase64}`
+        audio.addEventListener('ended', finish)
+        audio.addEventListener('error', finish)
+        fallbackTimeoutId = waitWithTracking(finish, 15000)
+        void audio.play().catch(finish)
+      })
+
+    const runSequence = async () => {
+      setVisibleBeatCount(0)
+      await wait(450)
+
+      for (let index = 0; index < councilResult.beats.length; index += 1) {
+        if (cancelled) {
+          return
+        }
+
+        setVisibleBeatCount(index + 1)
+        await playBeatAudio(index)
+        await wait(500)
+      }
+
+      if (!cancelled) {
+        setScreen('verdict')
+      }
+    }
+
+    void runSequence()
 
     return () => {
-      timers.forEach(window.clearTimeout)
-      window.clearTimeout(finalTimer)
+      cancelled = true
+      timeoutIds.forEach((timeoutId) => {
+        window.clearTimeout(timeoutId)
+      })
+      timeoutIds.clear()
+      audio.pause()
     }
   }, [councilResult, isGenerating, sessionStarted, screen])
 
   useEffect(() => {
-    if (screen !== 'deliberating' || visibleBeatCount === 0) {
+    if (screen !== 'deliberating') {
       councilAudioRef.current?.pause()
-      return
     }
-
-    const beat = councilResult.beats[visibleBeatCount - 1]
-
-    if (!beat?.audioBase64) {
-      return
-    }
-
-    const audio = councilAudioRef.current ?? new Audio()
-    councilAudioRef.current = audio
-    audio.pause()
-    audio.currentTime = 0
-    audio.src = `data:${beat.audioMimeType ?? 'audio/wav'};base64,${beat.audioBase64}`
-    void audio.play().catch(() => undefined)
-  }, [councilResult, screen, visibleBeatCount])
+  }, [screen])
 
   const startCouncil = async () => {
     const trimmedQuestion = question.trim()
