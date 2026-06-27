@@ -49,8 +49,9 @@ class TranscribeRequest(BaseModel):
     question: str = ""
 
 
-def clean_transcription(text: str) -> str:
+def clean_transcription(text: str, question: str = "") -> str:
     cleaned = text.strip().strip('"').strip("'").strip()
+    cleaned_question = question.strip().strip('"').strip("'").strip()
     lower = cleaned.lower()
     silence_markers = (
         "no audio",
@@ -66,6 +67,9 @@ def clean_transcription(text: str) -> str:
     )
 
     if not any(char.isalnum() for char in cleaned):
+        return ""
+
+    if cleaned_question and lower == cleaned_question.lower():
         return ""
 
     if any(marker in lower for marker in silence_markers):
@@ -91,7 +95,7 @@ async def transcribe(req: TranscribeRequest) -> dict[str, str]:
             types.Part.from_bytes(data=audio_bytes, mime_type=req.mimeType),
         ],
     )
-    return {"text": clean_transcription(response.text or "")}
+    return {"text": clean_transcription(response.text or "", req.question)}
 
 
 if __name__ == "__main__":
