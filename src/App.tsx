@@ -82,30 +82,75 @@ const interviewQuestions = [
   'What is one constraint the council must respect?',
 ]
 
+const STORAGE_KEY = 'agent-council-state-v1'
+
+type StoredCouncilState = {
+  councilResult?: CouncilResult
+  customAgents?: CouncilAgent[]
+  question?: string
+  selectedAgentIds?: string[]
+  userContext?: UserContextAnswer[]
+}
+
+const defaultQuestion = 'Should I quit my 9-to-5 and build a startup?'
+
+const defaultUserContext = interviewQuestions.map((interviewQuestion) => ({
+  question: interviewQuestion,
+  answer: '',
+}))
+
+const loadStoredState = (): StoredCouncilState => {
+  try {
+    const storedState = window.localStorage.getItem(STORAGE_KEY)
+
+    if (!storedState) {
+      return {}
+    }
+
+    return JSON.parse(storedState) as StoredCouncilState
+  } catch {
+    return {}
+  }
+}
+
+const storedState = loadStoredState()
+
+const mergeStoredContext = (
+  storedContext: UserContextAnswer[] | undefined,
+) =>
+  defaultUserContext.map((defaultAnswer) => {
+    const savedAnswer = storedContext?.find(
+      (item) => item.question === defaultAnswer.question,
+    )
+
+    return savedAnswer
+      ? { ...defaultAnswer, answer: savedAnswer.answer }
+      : defaultAnswer
+  })
+
 function App() {
   const [question, setQuestion] = useState(
-    'Should I quit my 9-to-5 and build a startup?',
+    storedState.question ?? defaultQuestion,
   )
   const [selectedAgentIds, setSelectedAgentIds] = useState<string[]>(
-    councilAgents.map((agent) => agent.id),
+    storedState.selectedAgentIds ?? councilAgents.map((agent) => agent.id),
   )
-  const [customAgents, setCustomAgents] = useState<CouncilAgent[]>([])
+  const [customAgents, setCustomAgents] = useState<CouncilAgent[]>(
+    storedState.customAgents ?? [],
+  )
   const [wildcardName, setWildcardName] = useState('')
   const [wildcardTone, setWildcardTone] = useState('')
   const [wildcardProtects, setWildcardProtects] = useState('')
   const [userContext, setUserContext] = useState<UserContextAnswer[]>(
-    interviewQuestions.map((interviewQuestion) => ({
-      question: interviewQuestion,
-      answer: '',
-    })),
+    mergeStoredContext(storedState.userContext),
   )
   const [sessionStarted, setSessionStarted] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [visibleBeatCount, setVisibleBeatCount] = useState(
-    fallbackCouncilResult.beats.length,
+    storedState.councilResult?.beats.length ?? fallbackCouncilResult.beats.length,
   )
   const [councilResult, setCouncilResult] =
-    useState<CouncilResult>(fallbackCouncilResult)
+    useState<CouncilResult>(storedState.councilResult ?? fallbackCouncilResult)
   const [statusMessage, setStatusMessage] = useState(
     'Preview uses local fallback until ADK or Gemini is configured.',
   )
@@ -120,6 +165,28 @@ function App() {
       allAgents.filter((agent) => selectedAgentIds.includes(agent.id)),
     [allAgents, selectedAgentIds],
   )
+
+  useEffect(() => {
+    setSelectedAgentIds((currentIds) => {
+      const validIds = currentIds.filter((id) =>
+        allAgents.some((agent) => agent.id === id),
+      )
+
+      return validIds.length === currentIds.length ? currentIds : validIds
+    })
+  }, [allAgents])
+
+  useEffect(() => {
+    const nextStoredState: StoredCouncilState = {
+      councilResult,
+      customAgents,
+      question,
+      selectedAgentIds,
+      userContext,
+    }
+
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextStoredState))
+  }, [councilResult, customAgents, question, selectedAgentIds, userContext])
 
   const toggleAgent = (agentId: string) => {
     setSelectedAgentIds((currentIds) => {
