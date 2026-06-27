@@ -7,7 +7,7 @@ MODEL = os.environ.get("AGENT_COUNCIL_MODEL", "gemini-3.5-flash")
 
 if os.environ.get("GOOGLE_CLOUD_PROJECT"):
     os.environ.setdefault("GOOGLE_GENAI_USE_VERTEXAI", "True")
-    os.environ.setdefault("GOOGLE_CLOUD_LOCATION", "us-central1")
+    os.environ.setdefault("GOOGLE_CLOUD_LOCATION", "global")
 
 
 root_agent = Agent(

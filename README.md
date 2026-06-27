@@ -36,9 +36,10 @@ Personal dilemmas and business decisions are rarely simple. We rarely have a sin
 
 This application utilizes cutting-edge tools from Google's AI ecosystem:
 
-1. **Google Gemini 2.5 Flash (`gemini-2.5-flash`)**
+1. **Google Gemini 3.5 Flash (`gemini-3.5-flash`)**
    * Serves as the primary reasoning and generation engine.
    * Leverages native JSON Schema matching to ensure valid, parseable debates and structured verdicts.
+   * Uses Vertex AI location `global` while the Cloud Run backend can still run in `us-central1`.
 2. **Google GenAI JS SDK (`@google/genai`)**
    * Powering direct, low-latency, client-side model generation when a direct API key is supplied.
 3. **Google Agent Development Kit (ADK)**
