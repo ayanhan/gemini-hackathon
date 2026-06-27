@@ -40,7 +40,7 @@ async def healthz() -> dict[str, str]:
     return {"status": "ok"}
 
 
-TRANSCRIBE_MODEL = os.environ.get("AGENT_COUNCIL_TRANSCRIBE_MODEL", "gemini-2.5-flash")
+TRANSCRIBE_MODEL = os.environ.get("AGENT_COUNCIL_TRANSCRIBE_MODEL", "gemini-3.5-flash")
 
 
 class TranscribeRequest(BaseModel):

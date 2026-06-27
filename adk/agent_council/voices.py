@@ -17,7 +17,7 @@ from google import genai
 from google.genai import types
 
 MODEL = os.environ.get("AGENT_COUNCIL_MODEL", "gemini-3.5-flash")
-TTS_MODEL = os.environ.get("AGENT_COUNCIL_TTS_MODEL", "gemini-2.5-flash-preview-tts")
+TTS_MODEL = os.environ.get("AGENT_COUNCIL_TTS_MODEL", "gemini-3.1-flash-tts-preview")
 TTS_TIMEOUT_S = float(os.environ.get("AGENT_COUNCIL_TTS_TIMEOUT_S", "20"))
 
 VOICE_PROFILES_BY_NAME = {
@@ -209,7 +209,7 @@ async def synthesize_speech(
 
             mime_type = inline_data.mime_type or "audio/wav"
             audio = _audio_bytes(inline_data.data)
-            if mime_type.startswith("audio/L16"):
+            if mime_type.lower().startswith("audio/l16"):
                 return _wav_base64(audio, mime_type), "audio/wav"
 
             return base64.b64encode(audio).decode("ascii"), mime_type
