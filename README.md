@@ -54,21 +54,57 @@ Authenticate and enable Vertex AI:
 ```bash
 gcloud auth application-default login
 gcloud config set project your-google-cloud-project-id
-gcloud services enable aiplatform.googleapis.com
+gcloud services enable \
+  aiplatform.googleapis.com \
+  run.googleapis.com \
+  cloudbuild.googleapis.com \
+  artifactregistry.googleapis.com
 ```
 
 Run both servers in separate terminals:
 
 ```bash
-npm run adk:server
+npm run adk:serve
 npm run dev
 ```
+
+`npm run adk:server` still runs the raw ADK CLI server. `npm run adk:serve`
+runs the Cloud Run-compatible FastAPI entrypoint from `adk/main.py`.
+
+## Deploy ADK to Cloud Run
+
+Set the same Google Cloud values in your shell:
+
+```bash
+export GOOGLE_CLOUD_PROJECT=your-google-cloud-project-id
+export GOOGLE_CLOUD_LOCATION=us-central1
+export GOOGLE_GENAI_USE_VERTEXAI=True
+```
+
+Deploy the ADK backend:
+
+```bash
+npm run gcp:deploy:adk
+```
+
+If Cloud Run uses the default compute service account, make sure that service
+account can call Vertex AI in your project.
+
+After deploy, Cloud Run prints a service URL. Put that URL in `.env.local`:
+
+```bash
+VITE_ADK_API_URL=https://your-cloud-run-service-url
+```
+
+Then rebuild or redeploy the frontend so it calls the Cloud Run ADK backend.
 
 ## Scripts
 
 ```bash
 npm run adk:install # install Python ADK dependency
 npm run adk:server  # start ADK API server on port 8000
+npm run adk:serve   # start Cloud Run-compatible ADK FastAPI server
+npm run gcp:deploy:adk # deploy ADK backend to Cloud Run
 npm run dev      # start local dev server
 npm run build    # type-check and build production assets
 npm run lint     # run oxlint
