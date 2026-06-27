@@ -213,24 +213,38 @@ const runCouncilWithAdk = async (
   adkApiUrl: string,
 ): Promise<CouncilResult> => {
   const sessionId = `council-${crypto.randomUUID()}`
-  const response = await fetch(
-    `${adkApiUrl.replace(/\/$/, '')}/apps/agent_council/run`,
+  const baseUrl = adkApiUrl.replace(/\/$/, '')
+  const userId = 'agent-council-web'
+  const sessionResponse = await fetch(
+    `${baseUrl}/apps/agent_council/users/${userId}/sessions/${sessionId}`,
     {
-      body: JSON.stringify({
-        app_name: 'agent_council',
-        user_id: 'agent-council-web',
-        session_id: sessionId,
-        new_message: {
-          role: 'user',
-          parts: [{ text: buildCouncilPayload(question, agents, userContext) }],
-        },
-      }),
+      body: JSON.stringify({}),
       headers: {
         'Content-Type': 'application/json',
       },
       method: 'POST',
     },
   )
+
+  if (!sessionResponse.ok && sessionResponse.status !== 409) {
+    throw new Error(`ADK session creation returned ${sessionResponse.status}.`)
+  }
+
+  const response = await fetch(`${baseUrl}/run`, {
+    body: JSON.stringify({
+      app_name: 'agent_council',
+      user_id: userId,
+      session_id: sessionId,
+      new_message: {
+        role: 'user',
+        parts: [{ text: buildCouncilPayload(question, agents, userContext) }],
+      },
+    }),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    method: 'POST',
+  })
 
   if (!response.ok) {
     throw new Error(`ADK server returned ${response.status}.`)

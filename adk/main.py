@@ -3,9 +3,15 @@ import os
 import uvicorn
 from fastapi import FastAPI
 from google.adk.cli.fast_api import get_fast_api_app
+from dotenv import load_dotenv
 
 
 AGENT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_DIR = os.path.dirname(AGENT_DIR)
+
+load_dotenv(os.path.join(PROJECT_DIR, ".env"))
+load_dotenv(os.path.join(AGENT_DIR, ".env"))
+
 SESSION_SERVICE_URI = os.environ.get(
     "SESSION_SERVICE_URI",
     "sqlite+aiosqlite:///./sessions.db",
