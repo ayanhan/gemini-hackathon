@@ -46,6 +46,7 @@ def load_cached_result() -> CouncilResult | None:
         decision=str(verdict_raw.get("decision", "")),
         conditions=str(verdict_raw.get("conditions", "")),
         firstMove=str(verdict_raw.get("firstMove", "")),
+        flipRisk=str(verdict_raw.get("flipRisk", "")),
     )
     alignment = [
         Alignment(

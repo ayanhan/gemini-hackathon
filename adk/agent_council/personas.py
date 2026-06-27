@@ -127,6 +127,7 @@ Return STRICT JSON only, no markdown, no extra keys, this exact shape:
   "decision": "clear unified decision, max 18 words",
   "conditions": "what must be true first, max 28 words",
   "firstMove": "one concrete action within 24 hours, max 24 words",
+  "flipRisk": "what would flip this decision to the opposite answer, max 26 words",
   "alignment": [
     {{"agent": "exact voice name", "agreement": 0-100, "keyConcerns": "their main concern, max 12 words"}}
   ]

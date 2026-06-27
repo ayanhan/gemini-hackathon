@@ -235,6 +235,7 @@ class CouncilOrchestrator(BaseAgent):
             or "Revisit with clearer constraints and more context.",
             firstMove=str(ruling.get("firstMove", "")).strip()
             or "Write down the single fact that would most change this decision.",
+            flipRisk=str(ruling.get("flipRisk", "")).strip(),
         )
         alignment = self._parse_alignment(ruling.get("alignment"), names)
         return verdict, chair_line, alignment

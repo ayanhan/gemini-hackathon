@@ -69,6 +69,7 @@ class Verdict:
     decision: str
     conditions: str
     firstMove: str
+    flipRisk: str = ""
 
 
 @dataclass
@@ -108,6 +109,7 @@ class CouncilResult:
                     "decision": self.verdict.decision,
                     "conditions": self.verdict.conditions,
                     "firstMove": self.verdict.firstMove,
+                    "flipRisk": self.verdict.flipRisk,
                 },
                 "alignment": [
                     {
