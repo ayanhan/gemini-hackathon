@@ -2009,3 +2009,155 @@ main.app-shell {
     align-items: flex-start;
   }
 }
+
+/* ============================================================
+   Viewport fit — keep every screen within one desktop viewport.
+   Shell is locked to the viewport; the active screen is the only
+   scroll region (so dense screens scroll internally, never the page),
+   and vertical rhythm is compressed so they fit without scrolling
+   at normal desktop heights.
+   ============================================================ */
+main.app-shell {
+  height: 100dvh;
+  min-height: 0;
+  padding-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.main-header {
+  flex: 0 0 auto;
+  position: static;
+}
+
+.app-shell > section {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  overflow-y: auto;
+}
+
+.app-footer {
+  flex: 0 0 auto;
+}
+
+/* Input screen */
+.screen-input-layout {
+  align-content: center;
+  padding-top: clamp(16px, 3vh, 36px);
+  padding-bottom: clamp(16px, 3vh, 36px);
+}
+.hero-title {
+  font-size: clamp(32px, 3.6vw, 50px);
+  margin-bottom: 14px;
+}
+.hero-description {
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+.input-card-panel {
+  padding: 18px 24px;
+  margin-bottom: 14px;
+}
+.category-pills-row {
+  margin-bottom: 16px;
+}
+
+/* Assembly screen */
+.screen-assembly-layout {
+  align-content: center;
+  padding-top: clamp(16px, 3vh, 28px);
+  padding-bottom: clamp(16px, 3vh, 28px);
+  gap: 24px;
+}
+
+/* Deliberation screen */
+.screen-deliberation-layout {
+  padding-top: clamp(14px, 2.4vh, 24px);
+  padding-bottom: clamp(14px, 2.4vh, 24px);
+  gap: 16px;
+}
+
+/* Verdict screen */
+.screen-verdict-layout {
+  padding-top: clamp(14px, 2.4vh, 24px);
+  padding-bottom: clamp(14px, 2.4vh, 24px);
+  gap: 16px;
+}
+.verdict-top-banner {
+  padding: clamp(18px, 3vh, 30px) clamp(24px, 4vw, 48px);
+  gap: 28px;
+}
+.verdict-title-text {
+  font-size: clamp(26px, 3vw, 40px);
+}
+.detail-card {
+  padding: 14px;
+}
+.detail-card-text {
+  font-size: 14px;
+  margin-top: 6px;
+}
+.sprint-timeline-checklist {
+  padding: 16px;
+  margin-top: 10px;
+}
+.sprint-step-content {
+  padding-bottom: 12px;
+}
+.verdict-flip-card {
+  margin-top: 12px;
+  padding: 14px;
+}
+.verdict-right-voting-col {
+  padding: 18px;
+  gap: 12px;
+}
+.agent-verdict-quotes-list {
+  gap: 8px;
+}
+.agent-quote-card {
+  padding: 9px 12px;
+}
+
+/* Verdict fills the viewport: banner fixed, the two columns scroll
+   internally only if the content is taller than the screen. */
+.app-shell > section.screen-verdict-layout {
+  overflow: hidden;
+}
+.screen-verdict-layout {
+  height: 100%;
+}
+.verdict-bottom-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.verdict-left-detail-col,
+.verdict-right-voting-col {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Deliberation fills the viewport: header + toggle fixed, the debate
+   columns scroll internally (the transcript grows like a chat feed). */
+.app-shell > section.screen-deliberation-layout {
+  overflow: hidden;
+}
+.screen-deliberation-layout {
+  height: 100%;
+}
+.deliberation-threaded-grid,
+.deliberation-roundtable-layout {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.voices-status-col,
+.debate-bubbles-col,
+.claims-tension-col {
+  min-height: 0;
+  overflow-y: auto;
+}
+.deliberation-roundtable-layout {
+  overflow-y: auto;
+}

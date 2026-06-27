@@ -1323,7 +1323,7 @@ function App() {
           </div>
         </section>
       )}
-      <footer className="app-footer" style={{ textAlign: 'center', fontSize: '11px', color: 'var(--muted)', padding: '24px 0 40px' }}>
+      <footer className="app-footer" style={{ textAlign: 'center', fontSize: '11px', color: 'var(--muted)', padding: '8px 0' }}>
         <span>{statusMessage}</span>
       </footer>
     </main>
