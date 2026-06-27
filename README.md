@@ -1,4 +1,4 @@
-# 🏛️ Agent Council
+# 🏛️ venn
 
 > **Put your hardest decision in front of every version of you.**  
 > A premium, highly structured decision-making framework built for the **Gemini Tokyo Hackathon** (June 27, 2026).
@@ -9,7 +9,7 @@
 
 Personal dilemmas and business decisions are rarely simple. We rarely have a single perspective; instead, we have an internal council of opposing voices. 
 
-**Agent Council** lets you put any hard choice (e.g., *"Should I quit my 9-to-5 and build a startup?"*) in front of a selected committee of AI agents representing different archetypal versions of yourself. The agents debate the issue from their assigned viewpoints, disagree with one another, challenge your cognitive biases, and synthesize a concrete, highly actionable verdict.
+**venn** lets you put any hard choice (e.g., *"Should I quit my 9-to-5 and build a startup?"*) in front of a selected committee of AI agents representing different archetypal versions of yourself. The agents debate the issue from their assigned viewpoints, disagree with one another, challenge your cognitive biases, and synthesize a concrete, highly actionable verdict.
 
 ---
 
