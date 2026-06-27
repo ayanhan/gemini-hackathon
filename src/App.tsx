@@ -1,4 +1,12 @@
-import { Brain, Clock3, Loader2, Mic2, Sparkles, UsersRound } from 'lucide-react'
+import {
+  Brain,
+  Clock3,
+  Loader2,
+  Mic2,
+  Plus,
+  Sparkles,
+  UsersRound,
+} from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import councilHero from './assets/council-hero.png'
 import {
@@ -67,6 +75,10 @@ function App() {
   const [selectedAgentIds, setSelectedAgentIds] = useState<string[]>(
     councilAgents.map((agent) => agent.id),
   )
+  const [customAgents, setCustomAgents] = useState<CouncilAgent[]>([])
+  const [wildcardName, setWildcardName] = useState('')
+  const [wildcardTone, setWildcardTone] = useState('')
+  const [wildcardProtects, setWildcardProtects] = useState('')
   const [sessionStarted, setSessionStarted] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [visibleBeatCount, setVisibleBeatCount] = useState(
@@ -75,13 +87,18 @@ function App() {
   const [councilResult, setCouncilResult] =
     useState<CouncilResult>(fallbackCouncilResult)
   const [statusMessage, setStatusMessage] = useState(
-    'Preview uses local fallback until a Gemini key is added.',
+    'Preview uses local fallback until ADK or Gemini is configured.',
+  )
+
+  const allAgents = useMemo(
+    () => [...councilAgents, ...customAgents],
+    [customAgents],
   )
 
   const selectedAgents = useMemo(
     () =>
-      councilAgents.filter((agent) => selectedAgentIds.includes(agent.id)),
-    [selectedAgentIds],
+      allAgents.filter((agent) => selectedAgentIds.includes(agent.id)),
+    [allAgents, selectedAgentIds],
   )
 
   const toggleAgent = (agentId: string) => {
@@ -94,6 +111,31 @@ function App() {
 
       return [...currentIds, agentId]
     })
+  }
+
+  const addWildcardAgent = () => {
+    const name = wildcardName.trim()
+    const tone = wildcardTone.trim()
+    const protects = wildcardProtects.trim()
+
+    if (!name || !tone || !protects) {
+      return
+    }
+
+    const newAgent: CouncilAgent = {
+      id: `wildcard-${crypto.randomUUID()}`,
+      name,
+      seat: 'wildcard perspective',
+      tone,
+      stance: protects,
+      line: `${name} protects ${protects}.`,
+    }
+
+    setCustomAgents((currentAgents) => [...currentAgents, newAgent])
+    setSelectedAgentIds((currentIds) => [...currentIds, newAgent.id])
+    setWildcardName('')
+    setWildcardTone('')
+    setWildcardProtects('')
   }
 
   useEffect(() => {
@@ -139,8 +181,8 @@ function App() {
       setCouncilResult(fallbackCouncilResult)
       setStatusMessage(
         error instanceof Error
-          ? `Gemini failed, showing fallback: ${error.message}`
-          : 'Gemini failed, showing fallback.',
+          ? `Council failed, showing fallback: ${error.message}`
+          : 'Council failed, showing fallback.',
       )
     } finally {
       setIsGenerating(false)
@@ -221,7 +263,7 @@ function App() {
           </div>
 
           <div className="agent-list">
-            {councilAgents.map((agent) => {
+            {allAgents.map((agent) => {
               const isSelected = selectedAgentIds.includes(agent.id)
 
               return (
@@ -238,6 +280,46 @@ function App() {
                 </button>
               )
             })}
+          </div>
+
+          <div className="wildcard-form" aria-label="Add custom council seat">
+            <p className="eyebrow">The Wildcard</p>
+            <label htmlFor="wildcard-name">Agent name</label>
+            <input
+              id="wildcard-name"
+              onChange={(event) => setWildcardName(event.target.value)}
+              placeholder="Steve Jobs"
+              value={wildcardName}
+            />
+
+            <label htmlFor="wildcard-tone">Tone</label>
+            <input
+              id="wildcard-tone"
+              onChange={(event) => setWildcardTone(event.target.value)}
+              placeholder="intense, product-obsessed"
+              value={wildcardTone}
+            />
+
+            <label htmlFor="wildcard-protects">What they protect</label>
+            <input
+              id="wildcard-protects"
+              onChange={(event) => setWildcardProtects(event.target.value)}
+              placeholder="focus, taste, brutal simplicity"
+              value={wildcardProtects}
+            />
+
+            <button
+              disabled={
+                !wildcardName.trim() ||
+                !wildcardTone.trim() ||
+                !wildcardProtects.trim()
+              }
+              onClick={addWildcardAgent}
+              type="button"
+            >
+              <Plus size={16} aria-hidden="true" />
+              Add seat
+            </button>
           </div>
         </section>
 

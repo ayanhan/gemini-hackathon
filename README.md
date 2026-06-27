@@ -20,8 +20,9 @@ debate.
 
 ## Run with Google ADK
 
-ADK is the preferred agent runtime path for the council. It keeps the Gemini key
-on the local server instead of exposing it to the browser.
+ADK is the preferred agent runtime path for the council. For the hackathon, use
+Google Cloud Vertex AI through ADK so the agent runs through Google Cloud instead
+of a browser API key.
 
 ```bash
 python3 -m venv .venv
@@ -40,11 +41,20 @@ Set these values:
 
 ```bash
 # .env, used by ADK
-GOOGLE_API_KEY=your_key_here
-GOOGLE_GENAI_USE_VERTEXAI=False
+GOOGLE_GENAI_USE_VERTEXAI=True
+GOOGLE_CLOUD_PROJECT=your-google-cloud-project-id
+GOOGLE_CLOUD_LOCATION=us-central1
 
 # .env.local, used by Vite
 VITE_ADK_API_URL=http://127.0.0.1:8000
+```
+
+Authenticate and enable Vertex AI:
+
+```bash
+gcloud auth application-default login
+gcloud config set project your-google-cloud-project-id
+gcloud services enable aiplatform.googleapis.com
 ```
 
 Run both servers in separate terminals:
@@ -72,10 +82,14 @@ Copy `.env.example` to `.env.local` to connect Gemini.
 ```bash
 VITE_GEMINI_API_KEY=your_key_here
 VITE_ADK_API_URL=http://127.0.0.1:8000
+GOOGLE_GENAI_USE_VERTEXAI=True
+GOOGLE_CLOUD_PROJECT=your-google-cloud-project-id
+GOOGLE_CLOUD_LOCATION=us-central1
 ```
 
-Frontend env values are visible to users in the browser. For a serious version,
-prefer ADK or a small backend/API route that keeps the Gemini key server-side.
+Frontend env values are visible to users in the browser. The preferred path is
+ADK + Google Cloud Vertex AI because the browser only sees `VITE_ADK_API_URL`,
+not the model credentials.
 
 If no key is present, the app uses a local fallback debate so the demo still
 works.
