@@ -13,6 +13,15 @@
   --green: #3E9B57;
   --purple: #7A5AF0;
 
+  /* Agent seat colors (match agentMeta in App.tsx + the mockup) */
+  --mentor: #1F9C8B;
+  --buddy: #C8881C;
+  --eighteen: #E0603C;
+  --failed: #5B61C9;
+  --millionaire: #3E9B57;
+  --parents: #CE5680;
+  --primary-gradient: linear-gradient(120deg, #4F7CF7, #7A5AF0 55%, #E26AC9);
+
   --display: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
   --sans: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
   --mono: 'JetBrains Mono', monospace;

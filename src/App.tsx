@@ -519,7 +519,7 @@ function App() {
               <div className="header-logo-dot"></div>
             </div>
           </div>
-          <span className="header-brand">Agent Council</span>
+          <span className="header-brand">venn</span>
         </div>
         <div className="header-right">
           {screen === 'input' && (

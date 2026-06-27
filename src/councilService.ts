@@ -103,7 +103,7 @@ const buildPrompt = (
     )
     .join('\n')
 
-  return `You are running Agent Council, a fast debate between appointed voices.
+  return `You are running venn, a fast debate between appointed voices.
 
 Decision:
 ${question}
@@ -170,8 +170,15 @@ const buildCouncilPayload = (
     })),
   })
 
+const stripJsonFences = (text: string): string =>
+  text
+    .trim()
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/, '')
+    .trim()
+
 const parseCouncilResult = (text: string): Omit<CouncilResult, 'source'> => {
-  const parsed = JSON.parse(text) as Partial<CouncilResult>
+  const parsed = JSON.parse(stripJsonFences(text)) as Partial<CouncilResult>
 
   if (!Array.isArray(parsed.beats) || parsed.beats.length === 0) {
     throw new Error('Gemini response did not include debate beats.')
